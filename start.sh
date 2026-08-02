@@ -14,8 +14,10 @@ echo "============================================"
 # 1. Install Python dependencies
 # ------------------------------------------------------------------
 echo "[1/3] Installing dependencies..."
-# Install llama-cpp-python with ROCm/HIP BLAS backend for AMD GPU
-CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python --quiet
+# Use pre-built ROCm wheel (no compilation needed — saves ~8 min)
+pip install llama-cpp-python \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/rocm \
+    --quiet
 # Install the rest of the project
 pip install -e . --quiet
 
