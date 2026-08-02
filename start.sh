@@ -14,10 +14,11 @@ echo "============================================"
 # 1. Install Python dependencies
 # ------------------------------------------------------------------
 echo "[1/3] Installing dependencies..."
-# Use pre-built ROCm wheel (no compilation needed — saves ~8 min)
+# Try pre-built ROCm wheel first (fast), fall back to CPU-only (instant)
 pip install llama-cpp-python \
     --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/rocm \
-    --quiet
+    --quiet 2>/dev/null || \
+pip install llama-cpp-python --quiet
 # Install the rest of the project
 pip install -e . --quiet
 
@@ -52,4 +53,5 @@ exec streamlit run src/ui/chat_app.py \
     --server.headless true \
     --server.enableCORS false \
     --server.enableXsrfProtection false \
+    --server.enableWebsocketCompression false \
     --browser.gatherUsageStats false
