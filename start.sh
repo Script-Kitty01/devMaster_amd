@@ -1,7 +1,8 @@
 #!/bin/bash
 # =============================================================================
 # ForgeAI — Radeon Cloud Startup Script
-# Runs on AMD OneClick Base (rocm7.2.1-py3.12) with Streamlit App deploy type.
+# Runs on AMD OneClick Base (rocm7.2.1-py3.12) with Gradio App deploy type.
+# Gradio uses HTTP polling (no WebSockets) — works behind all proxies.
 # =============================================================================
 set -e
 
@@ -45,13 +46,7 @@ print('Download complete.')
 fi
 
 # ------------------------------------------------------------------
-# 3. Launch Streamlit
+# 3. Launch Gradio (HTTP polling, no WebSockets needed)
 # ------------------------------------------------------------------
-echo "[3/3] Launching ForgeAI UI on port 8501..."
-exec streamlit run src/ui/chat_app.py \
-    --server.port 8501 \
-    --server.headless true \
-    --server.enableCORS false \
-    --server.enableXsrfProtection false \
-    --server.enableWebsocketCompression false \
-    --browser.gatherUsageStats false
+echo "[3/3] Launching ForgeAI Gradio UI on port 7860..."
+exec python src/ui/gradio_app.py
