@@ -1,0 +1,32 @@
+[project]
+name = "forgeai"
+version = "0.1.0"
+description = "ForgeAI — Conversational Multi-Agent Engineering Assistant powered by AMD ROCm"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0",
+    "langchain-community>=0.3.0",
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "streamlit>=1.35.0",
+    "gitpython>=3.1.0",
+    "pygments>=2.18.0",
+    "bandit>=1.7.0",
+    "semgrep>=1.70.0",
+    "pydantic>=2.0.0",
+    "rich>=13.0.0",
+    "huggingface-hub>=0.20.0",
+]
+
+[project.optional-dependencies]
+rocm = [
+    "llama-cpp-python",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
