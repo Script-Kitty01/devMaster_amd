@@ -111,7 +111,7 @@ def _format_findings(findings: list[dict]) -> str:
 # Chat handler
 # ---------------------------------------------------------------------------
 
-def chat_fn(message: str, history: list[list[str]], repo_path: str) -> tuple[str, list[list[str]]]:
+def chat_fn(message: str, history: list[dict], repo_path: str) -> tuple[str, list[dict]]:
     """Process a user message and return (empty_input, updated_history)."""
     global _repo_path, _repo_indexed, _thread_id, _workflow
 
@@ -162,13 +162,16 @@ def chat_fn(message: str, history: list[list[str]], repo_path: str) -> tuple[str
         if findings:
             response_text += _format_findings(findings)
 
-        history.append([message, response_text])
+        # Gradio 6.0 expects dict format: {"role": "...", "content": "..."}
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": response_text})
         return "", history
 
     except Exception as e:
         logger.exception("Chat error")
         error_msg = f"❌ Error: {e}"
-        history.append([message, error_msg])
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": error_msg})
         return "", history
 
 
@@ -176,7 +179,7 @@ def index_handler(repo_path: str) -> str:
     return _index_repo(repo_path)
 
 
-def clear_handler() -> tuple[list[list[str]], str]:
+def clear_handler() -> tuple[list[dict], str]:
     global _thread_id
     _thread_id = f"forgeai-{int(time.time())}"
     return [], "Chat cleared."
@@ -191,7 +194,7 @@ CSS = """
 footer { display: none !important; }
 """
 
-with gr.Blocks(css=CSS, title="ForgeAI — AMD ROCm Engineering Assistant") as demo:
+with gr.Blocks(title="ForgeAI — AMD ROCm Engineering Assistant") as demo:
     gr.Markdown(
         """# 🔥 ForgeAI
         **Multi-Agent AI Engineering Assistant** — Powered by AMD ROCm + LangGraph
@@ -223,7 +226,7 @@ with gr.Blocks(css=CSS, title="ForgeAI — AMD ROCm Engineering Assistant") as d
             """)
 
         with gr.Column(scale=3):
-            chatbot = gr.Chatbot(label="Conversation", height=500, show_copy_button=True)
+            chatbot = gr.Chatbot(label="Conversation", height=500)
             msg_input = gr.Textbox(
                 label="Ask about your codebase...",
                 placeholder="e.g., Find security vulnerabilities in this codebase",
@@ -241,4 +244,5 @@ if __name__ == "__main__":
         server_port=7860,
         share=False,
         show_error=True,
+        css=CSS,
     )

@@ -61,11 +61,11 @@ app.post("/transfer", (req, res) => {
   const { from, to, amount } = req.body;
   db.query(
     `UPDATE accounts SET balance = balance - ${amount} WHERE id = ${from}`,
-    () => {}
+    () => {},
   );
   db.query(
     `UPDATE accounts SET balance = balance + ${amount} WHERE id = ${to}`,
-    () => {}
+    () => {},
   );
   res.json({ status: "ok" });
 });
