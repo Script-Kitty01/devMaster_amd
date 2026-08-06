@@ -2,8 +2,8 @@
 ## Track 2: Multi-Agent AI Engineering Assistant
 
 **Team:** Script-Kitty01  
-**Date:** August 3, 2026  
-**Platform:** AMD ROCm on Radeon Cloud
+**Date:** August 6, 2026  
+**Platform:** AMD ROCm 7.2.1 on Radeon Cloud (gfx1100)
 
 ---
 
@@ -46,7 +46,7 @@ User Query
 | **Agent Framework** | LangGraph (StateGraph with parallel dispatch) |
 | **UI** | Gradio 6.22.0 |
 | **Code Indexing** | ChromaDB + sentence-transformers |
-| **GPU** | AMD ROCm (Radeon Cloud instance) |
+| **GPU Acceleration** | AMD ROCm 7.2.1 / HIP 7.2.53211 (Radeon gfx1100) — 10.3 tok/s |
 | **Tunneling** | rc-tunnel (FRPC) for public access |
 
 ## 📊 Live Demo Results
@@ -82,13 +82,32 @@ User Query
 | ⚡ Performance | 4 |
 | 🏗️ Architecture | 1 |
 
+## � GPU Acceleration (ROCm/HIP)
+
+llama-cpp-python compiled with HIP BLAS for native AMD GPU inference:
+
+| Metric | Value |
+|--------|-------|
+| **GPU** | AMD Radeon Graphics gfx1100 |
+| **ROCm** | 7.2.1 / HIP 7.2.53211 |
+| **Model** | Llama-3.2-3B-Instruct-Q4_K_M (2.02 GB) |
+| **Model Load** | 1.5s |
+| **Inference Speed** | **10.3 tok/s** (steady-state ~11.0 tok/s) |
+| **GPU Layers** | All layers offloaded (`n_gpu_layers=-1`) |
+
+```bash
+# GPU setup (one-time):
+pip install llama-cpp-python --force-reinstall --no-cache-dir \
+  -C cmake.args="-DGGML_HIPBLAS=on;-DCMAKE_C_COMPILER=/opt/rocm/bin/hipcc;-DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc;-DAMDGPU_TARGETS=gfx1100"
+```
+
 ## 🔧 Key Engineering Decisions
 
 1. **Markdown fallback parser** — The 3B model often outputs markdown instead of JSON. Added `_extract_from_markdown()` to gracefully handle this instead of failing.
 
-2. **Debate phase skipped** — Each debate round adds 4+ LLM calls. For the 3B model on CPU, this was causing deadlocks. Skipped for reliability.
+2. **Cross-review debate** — Consensus agent runs 2-round debate challenging high-severity findings across agents, reducing false positives.
 
-3. **CPU-optimized inference** — `n_ctx=2048`, `n_batch=1`, `n_threads=8` tuned for the AMD EPYC instance.
+3. **GPU-accelerated inference** — All model layers offloaded to AMD GPU via ROCm/HIP BLAS. `n_ctx=2048`, `n_batch=512` tuned for gfx1100.
 
 4. **Thread-safe LLM singleton** — Single `Llama` instance with `threading.Lock` to prevent concurrent inference crashes.
 
@@ -136,10 +155,10 @@ python src/ui/gradio_app.py
 
 ## 🏆 Why This Wins
 
-- **AMD-native** — Runs entirely on AMD ROCm hardware, no NVIDIA dependency
-- **Multi-agent** — True parallel agent dispatch with LangGraph, not sequential
-- **Real results** — 30 actionable findings from a single query
-- **Production-ready patterns** — Thread-safe LLM, graceful degradation, markdown fallback
+- **AMD-native GPU acceleration** — Full ROCm/HIP BLAS inference at 10.3 tok/s on Radeon gfx1100, zero NVIDIA dependency
+- **Multi-agent with debate** — True parallel agent dispatch + 2-round cross-review debate for higher accuracy
+- **Real results** — 30 actionable findings from a single query (3 critical, 8 high)
+- **Production-ready patterns** — Thread-safe LLM, graceful degradation, markdown fallback, GPU/CPU auto-fallback
 - **Extensible** — Add new specialist agents by subclassing `BaseAgent`
 
 ---
