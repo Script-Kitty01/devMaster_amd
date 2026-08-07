@@ -195,7 +195,7 @@ class ROCmProfiler:
         """Generate a formatted benchmark report."""
         lines = [
             "=" * 60,
-            "  ForgeAI ROCm Benchmark Report",
+            "  Kutaar ROCm Benchmark Report",
             "=" * 60,
         ]
 

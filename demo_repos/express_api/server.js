@@ -1,6 +1,6 @@
 /**
  * Express API — contains intentional security & architecture issues
- * for ForgeAI multi-agent analysis.
+ * for Kutaar multi-agent analysis.
  */
 const express = require("express");
 const jwt = require("jsonwebtoken");

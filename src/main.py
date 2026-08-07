@@ -1,5 +1,5 @@
 """
-ForgeAI — Main Entry Point
+Kutaar — Main Entry Point
 
 Usage:
     # Launch the Streamlit UI
@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def setup_logging(level: str = "INFO") -> None:
-    """Configure logging for ForgeAI."""
+    """Configure logging for Kutaar."""
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -38,7 +38,7 @@ def run_benchmarks() -> None:
     from src.benchmarks.rocm_profiler import ROCmProfiler
 
     print("=" * 60)
-    print("  ForgeAI — ROCm Benchmark Suite")
+    print("  Kutaar — ROCm Benchmark Suite")
     print("=" * 60)
 
     config = LLMConfig()
@@ -63,7 +63,7 @@ def run_ui() -> None:
     import subprocess
 
     ui_path = Path(__file__).resolve().parent / "ui" / "chat_app.py"
-    print(f"Launching ForgeAI UI from: {ui_path}")
+    print(f"Launching Kutaar UI from: {ui_path}")
     subprocess.run(
         ["streamlit", "run", str(ui_path)],
         check=False,
@@ -72,7 +72,7 @@ def run_ui() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="ForgeAI — Multi-Agent Engineering Assistant powered by AMD ROCm",
+        description="Kutaar — Multi-Agent Engineering Assistant powered by AMD ROCm",
     )
     parser.add_argument(
         "--benchmark",

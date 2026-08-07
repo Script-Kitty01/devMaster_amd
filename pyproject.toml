@@ -1,7 +1,7 @@
 [project]
-name = "forgeai"
+name = "kutaar"
 version = "0.1.0"
-description = "ForgeAI — Conversational Multi-Agent Engineering Assistant powered by AMD ROCm"
+description = "Kutaar — Conversational Multi-Agent Engineering Assistant powered by AMD ROCm"
 requires-python = ">=3.10"
 dependencies = [
     "langgraph>=0.2.0",

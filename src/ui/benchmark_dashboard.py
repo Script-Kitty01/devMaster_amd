@@ -1,5 +1,5 @@
 """
-ForgeAI Benchmark Dashboard — Streamlit page for ROCm GPU profiling,
+Kutaar Benchmark Dashboard — Streamlit page for ROCm GPU profiling,
 inference speed comparison, and quantization benchmarks.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ import streamlit as st
 from dataclasses import dataclass, field
 from typing import Any
 
-st.set_page_config(page_title="ForgeAI Benchmarks", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Kutaar Benchmarks", page_icon="📊", layout="wide")
 
 # ---------------------------------------------------------------------------
 # Benchmark runner (inline to avoid import issues during startup)
@@ -68,7 +68,7 @@ def _placeholder_results() -> list[BenchEntry]:
 # UI
 # ---------------------------------------------------------------------------
 
-st.title("📊 ForgeAI Benchmark Dashboard")
+st.title("📊 Kutaar Benchmark Dashboard")
 st.caption("AMD ROCm GPU Inference Performance")
 
 col1, col2, col3, col4 = st.columns(4)

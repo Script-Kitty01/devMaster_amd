@@ -1,1 +1,1 @@
-"""Sample application for ForgeAI demo."""
+"""Sample application for Kutaar demo."""

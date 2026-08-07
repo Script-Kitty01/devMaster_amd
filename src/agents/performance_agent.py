@@ -15,7 +15,7 @@ from src.state.conversation_state import AgentFinding
 
 logger = logging.getLogger(__name__)
 
-PERFORMANCE_SYSTEM_PROMPT = """You are the **Performance Agent** of ForgeAI, an AI-powered code review assistant running on AMD ROCm.
+PERFORMANCE_SYSTEM_PROMPT = """You are the **Performance Agent** of Kutaar, an AI-powered code review assistant running on AMD ROCm.
 
 Your expertise:
 - Algorithmic complexity analysis (Big-O)

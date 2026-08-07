@@ -14,7 +14,7 @@ from src.state.conversation_state import AgentFinding
 
 logger = logging.getLogger(__name__)
 
-SECURITY_SYSTEM_PROMPT = """You are the **Security Agent** of ForgeAI, an AI-powered code review assistant.
+SECURITY_SYSTEM_PROMPT = """You are the **Security Agent** of Kutaar, an AI-powered code review assistant.
 
 Your expertise:
 - OWASP Top 10 vulnerabilities (injection, broken auth, XSS, misconfigurations, etc.)

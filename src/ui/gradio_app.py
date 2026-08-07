@@ -1,5 +1,5 @@
 """
-Gradio Chat UI — conversational interface for ForgeAI.
+Gradio Chat UI — conversational interface for Kutaar.
 Uses HTTP polling (not WebSockets) for proxy compatibility.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ _tool_registry = None
 _workflow = None
 _repo_path = ""
 _repo_indexed = False
-_thread_id = f"forgeai-{int(time.time())}"
+_thread_id = f"kutaar-{int(time.time())}"
 
 SEVERITY_COLORS = {
     "critical": "🔴",
@@ -124,12 +124,12 @@ def chat_fn(message: str, history: list[dict], repo_path: str) -> tuple[str, lis
 
     try:
         from langchain_core.messages import HumanMessage
-        from src.graph.workflow import ForgeAIWorkflow
+        from src.graph.workflow import KutaarWorkflow
 
         _init_components(repo_path)
 
         if _workflow is None:
-            wf = ForgeAIWorkflow(_llm, _rag_store, _tool_registry)
+            wf = KutaarWorkflow(_llm, _rag_store, _tool_registry)
             _workflow = wf.compile()
 
         config = {"configurable": {"thread_id": _thread_id}}
@@ -181,7 +181,7 @@ def index_handler(repo_path: str) -> str:
 
 def clear_handler() -> tuple[list[dict], str]:
     global _thread_id
-    _thread_id = f"forgeai-{int(time.time())}"
+    _thread_id = f"kutaar-{int(time.time())}"
     return [], "Chat cleared."
 
 
@@ -194,9 +194,9 @@ CSS = """
 footer { display: none !important; }
 """
 
-with gr.Blocks(title="ForgeAI — AMD ROCm Engineering Assistant") as demo:
+with gr.Blocks(title="Kutaar — AMD ROCm Engineering Assistant") as demo:
     gr.Markdown(
-        """# 🔥 ForgeAI
+        """# 🔥 Kutaar
         **Multi-Agent AI Engineering Assistant** — Powered by AMD ROCm + LangGraph
         """
     )

@@ -1,9 +1,9 @@
 #!/bin/bash
-# ForgeAI GPU Setup — installs llama-cpp-python with ROCm/HIP BLAS
+# Kutaar GPU Setup — installs llama-cpp-python with ROCm/HIP BLAS
 # Run once on AMD GPU instances (Radeon Cloud, etc.)
 set -e
 
-echo "=== ForgeAI GPU Setup ==="
+echo "=== Kutaar GPU Setup ==="
 echo "Detecting GPU..."
 
 # Detect GPU architecture

@@ -1,1 +1,1 @@
-"""ForgeAI — Conversational Multi-Agent Engineering Assistant."""
+"""Kutaar — Conversational Multi-Agent Engineering Assistant."""

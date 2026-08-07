@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================================
-# ForgeAI — Radeon Cloud Startup Script
+# Kutaar — Radeon Cloud Startup Script
 # Runs on AMD OneClick Base (rocm7.2.1-py3.12) with Gradio App deploy type.
 # Gradio uses HTTP polling (no WebSockets) — works behind all proxies.
 # =============================================================================
 set -e
 
 echo "============================================"
-echo "  ForgeAI — Multi-Agent Engineering Assistant"
+echo "  Kutaar — Multi-Agent Engineering Assistant"
 echo "  AMD ROCm + Radeon Cloud"
 echo "============================================"
 
@@ -48,5 +48,5 @@ fi
 # ------------------------------------------------------------------
 # 3. Launch Gradio (HTTP polling, no WebSockets needed)
 # ------------------------------------------------------------------
-echo "[3/3] Launching ForgeAI Gradio UI on port 7860..."
+echo "[3/3] Launching Kutaar Gradio UI on port 7860..."
 exec python src/ui/gradio_app.py

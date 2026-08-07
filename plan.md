@@ -1,4 +1,4 @@
-# ForgeAI — Conversational Multi-Agent Engineering Assistant
+# Kutaar — Conversational Multi-Agent Engineering Assistant
 
 **AMD AI DevMaster Hackathon — Track 2: Agentic AI**
 
@@ -14,7 +14,7 @@ A conversational, locally-deployed AI engineering assistant where 5 specialist a
 
 ## Track 2 Scoring Alignment (120 Points)
 
-| Official Criteria                                | Points | How ForgeAI Delivers                                                                                                                              |
+| Official Criteria                                | Points | How Kutaar Delivers                                                                                                                              |
 | ------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Clear task positioning + creative scenarios      | 20     | "Your private AI engineering team on AMD Radeon" — 5 specialist agents collaborating                                                              |
 | Task decomposition, tool invocation, RAG, memory | 20     | Planner decomposes tasks. Agents invoke bandit/semgrep/rocprof. ChromaDB RAG. LangGraph checkpointing for memory. **All 5 capabilities covered.** |
@@ -220,7 +220,7 @@ devmaster/
 
 | Decision            | Choice                                                                                                                |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Product name**    | ForgeAI — "Your private AI engineering team, running entirely on your AMD Radeon GPU."                                |
+| **Product name**    | Kutaar — "Your private AI engineering team, running entirely on your AMD Radeon GPU."                                |
 | **Positioning**     | Conversational multi-agent engineering assistant — NOT a one-shot code review tool                                    |
 | **Primary model**   | Llama 3.2 3B Q4_K_M (fast, fits consumer Radeon)                                                                      |
 | **Fallback model**  | Mistral 7B Q4 (if 8GB+ VRAM available)                                                                                |

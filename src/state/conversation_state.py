@@ -73,7 +73,7 @@ class DebateRound(TypedDict, total=False):
 
 class ConversationState(TypedDict, total=False):
     """
-    The full state graph for a ForgeAI conversation session.
+    The full state graph for a Kutaar conversation session.
 
     Messages accumulate via LangGraph's `add_messages` reducer so the full
     chat history is preserved across turns.

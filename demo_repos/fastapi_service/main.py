@@ -1,6 +1,6 @@
 """
 FastAPI microservice — contains intentional performance, security,
-and architecture issues for ForgeAI multi-agent analysis.
+and architecture issues for Kutaar multi-agent analysis.
 """
 import os
 import hashlib

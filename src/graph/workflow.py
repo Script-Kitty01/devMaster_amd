@@ -37,12 +37,12 @@ from src.agents.consensus_agent import ConsensusAgent
 logger = logging.getLogger(__name__)
 
 
-class ForgeAIWorkflow:
+class KutaarWorkflow:
     """
-    The main LangGraph workflow for ForgeAI.
+    The main LangGraph workflow for Kutaar.
 
     Usage:
-        wf = ForgeAIWorkflow(llm, rag_store, tool_registry)
+        wf = KutaarWorkflow(llm, rag_store, tool_registry)
         app = wf.compile()
         result = app.invoke({"messages": [HumanMessage("Review my code")], ...})
     """
@@ -177,7 +177,7 @@ class ForgeAIWorkflow:
         debate_count = len(state.get("debate_rounds", []))
 
         response_parts = [
-            f"## ForgeAI Analysis Complete\n",
+            f"## Kutaar Analysis Complete\n",
             f"**Quality Score:** {score:.2f}/1.00 | **Findings:** {total_findings} | **Debate Rounds:** {debate_count}",
         ]
 

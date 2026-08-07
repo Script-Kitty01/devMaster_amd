@@ -1,5 +1,5 @@
 """
-Sample application with intentional issues for ForgeAI to detect.
+Sample application with intentional issues for Kutaar to detect.
 
 Contains: security vulnerabilities, performance issues, architecture smells.
 """

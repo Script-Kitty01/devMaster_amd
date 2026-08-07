@@ -1,7 +1,7 @@
 {
   "name": "express-api-demo",
   "version": "1.0.0",
-  "description": "Express API with intentional issues for ForgeAI detection",
+  "description": "Express API with intentional issues for Kutaar detection",
   "main": "server.js",
   "dependencies": {
     "express": "4.18.2",

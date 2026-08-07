@@ -1,5 +1,5 @@
 """
-Streamlit Chat UI — conversational interface for ForgeAI.
+Streamlit Chat UI — conversational interface for Kutaar.
 
 Features:
 - Chat interface with agent identity labels
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="ForgeAI — AMD ROCm Engineering Assistant",
+    page_title="Kutaar — AMD ROCm Engineering Assistant",
     page_icon="🔥",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -47,7 +47,7 @@ def init_session() -> None:
         "llm": None,
         "rag_store": None,
         "tool_registry": None,
-        "thread_id": f"forgeai-{int(time.time())}",
+        "thread_id": f"kutaar-{int(time.time())}",
         "benchmark_results": None,
         "show_tools": False,
         "show_benchmarks": False,
@@ -68,7 +68,7 @@ def render_sidebar() -> None:
     """Render the sidebar with config, repo upload, and benchmarks."""
     with st.sidebar:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=64)
-        st.title("ForgeAI 🔥")
+        st.title("Kutaar 🔥")
         st.caption("Multi-Agent Engineering Assistant")
         st.caption("Powered by AMD ROCm + LangGraph")
 
@@ -90,7 +90,7 @@ def render_sidebar() -> None:
         with col2:
             if st.button("🗑️ Clear Chat", use_container_width=True):
                 st.session_state.messages = []
-                st.session_state.thread_id = f"forgeai-{int(time.time())}"
+                st.session_state.thread_id = f"kutaar-{int(time.time())}"
                 st.rerun()
 
         if st.session_state.repo_indexed:
@@ -119,7 +119,7 @@ def render_sidebar() -> None:
         # About
         with st.expander("ℹ️ About"):
             st.markdown("""
-            **ForgeAI** is a conversational multi-agent AI assistant for
+            **Kutaar** is a conversational multi-agent AI assistant for
             code review and engineering analysis.
 
             **Agents:**
@@ -185,7 +185,7 @@ def _index_repository(repo_path: str) -> None:
 
 def render_chat() -> None:
     """Render the main chat interface."""
-    st.title("🔥 ForgeAI")
+    st.title("🔥 Kutaar")
     st.caption("Ask me anything about your codebase — I'll analyze it with my team of AI agents.")
 
     # Display chat history
@@ -247,7 +247,7 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
     from src.llm.rocm_service import ROCmLLM
     from src.rag.chroma_store import RAGStore
     from src.tools.tool_registry import ToolRegistry
-    from src.graph.workflow import ForgeAIWorkflow
+    from src.graph.workflow import KutaarWorkflow
 
     # Lazy-init components
     if st.session_state.llm is None:
@@ -262,7 +262,7 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
         st.session_state.tool_registry = ToolRegistry(st.session_state.repo_path)
 
     if st.session_state.workflow is None:
-        wf = ForgeAIWorkflow(
+        wf = KutaarWorkflow(
             st.session_state.llm,
             st.session_state.rag_store,
             st.session_state.tool_registry,

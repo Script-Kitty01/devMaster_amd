@@ -1,0 +1,62 @@
+import requests, json, time
+from websocket import create_connection
+
+base = 'https://radeon-global.anruicloud.com/instances/u-14073-bcd85560'
+headers = {'Authorization': 'token amd-oneclick'}
+
+r = requests.post(f'{base}/api/kernels', json={'name': 'python3'}, headers=headers)
+kid = r.json()['id']
+
+ws = create_connection(f'wss://radeon-global.anruicloud.com/instances/u-14073-bcd85560/api/kernels/{kid}/channels?token=amd-oneclick')
+
+code = """
+import subprocess, sys
+
+# Check if llama-cpp-python is installed
+r = subprocess.run([sys.executable, '-m', 'pip', 'list'], capture_output=True, text=True)
+for line in r.stdout.split(chr(10)):
+    if 'llama' in line.lower():
+        print('FOUND:', line)
+
+# Try importing
+r = subprocess.run([sys.executable, '-c', 'import llama_cpp; print(llama_cpp.__version__)'], capture_output=True, text=True)
+print('Import llama_cpp:', r.stdout.strip(), r.stderr.strip()[:200])
+
+r = subprocess.run([sys.executable, '-c', 'import llama_cpp_python; print("ok")'], capture_output=True, text=True)
+print('Import llama_cpp_python:', r.stdout.strip(), r.stderr.strip()[:200])
+
+# Install llama-cpp-python
+print('Installing llama-cpp-python...')
+r = subprocess.run([sys.executable, '-m', 'pip', 'install', 'llama-cpp-python', '--break-system-packages', '-q'], capture_output=True, text=True, timeout=120)
+print('Install result:', r.returncode, r.stderr[-200:] if r.stderr else '')
+
+# Verify
+r = subprocess.run([sys.executable, '-c', 'import llama_cpp; print("OK:", llama_cpp.__version__)'], capture_output=True, text=True)
+print('After install:', r.stdout.strip(), r.stderr.strip()[:200])
+"""
+
+msg = json.dumps({
+    'header': {'msg_id': 'fix1', 'username': 'u', 'session': 's', 'msg_type': 'execute_request', 'version': '5.3'},
+    'parent_header': {}, 'metadata': {},
+    'content': {'code': code, 'silent': False, 'store_history': False, 'user_expressions': {}, 'allow_stdin': False, 'stop_on_error': True},
+    'channel': 'shell'
+})
+ws.send(msg)
+
+timeout = time.time() + 180
+while time.time() < timeout:
+    ws.settimeout(10)
+    try:
+        resp = ws.recv()
+        data = json.loads(resp)
+        if data.get('msg_type') == 'stream' and data.get('parent_header', {}).get('msg_id') == 'fix1':
+            print(data.get('content', {}).get('text', ''), end='')
+        elif data.get('msg_type') == 'execute_result' and data.get('parent_header', {}).get('msg_id') == 'fix1':
+            print(data.get('content', {}).get('data', {}).get('text/plain', ''))
+        elif data.get('msg_type') == 'error' and data.get('parent_header', {}).get('msg_id') == 'fix1':
+            print('ERROR:', data.get('content', {}).get('ename', ''), data.get('content', {}).get('evalue', ''))
+        elif data.get('msg_type') == 'status' and data.get('content', {}).get('execution_state') == 'idle' and data.get('parent_header', {}).get('msg_id') == 'fix1':
+            break
+    except:
+        break
+ws.close()

@@ -16,7 +16,7 @@ from src.state.conversation_state import AgentFinding, DebateRound
 
 logger = logging.getLogger(__name__)
 
-CONSENSUS_SYSTEM_PROMPT = """You are the **Consensus Agent** of ForgeAI, an AI-powered code review assistant.
+CONSENSUS_SYSTEM_PROMPT = """You are the **Consensus Agent** of Kutaar, an AI-powered code review assistant.
 
 Your role:
 1. Collect findings from all specialist agents (Security, Performance, Architecture, DevOps)

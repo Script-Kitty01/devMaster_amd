@@ -1,4 +1,5 @@
-# 🔥 ForgeAI — AMD AI DevMaster Hackathon Submission
+# 🔥 Kutaar — AMD AI DevMaster Hackathon Submission
+
 ## Track 2: Multi-Agent AI Engineering Assistant
 
 **Team:** Script-Kitty01  
@@ -9,7 +10,7 @@
 
 ## 🎯 What It Does
 
-ForgeAI is a **6-agent AI engineering assistant** that analyzes codebases using a multi-agent LangGraph pipeline powered by AMD ROCm. You point it at a repo, click "Index", and ask questions — it dispatches 5 specialist agents in parallel, then a Consensus agent synthesizes their findings into a unified report.
+Kutaar is a **6-agent AI engineering assistant** that analyzes codebases using a multi-agent LangGraph pipeline powered by AMD ROCm. You point it at a repo, click "Index", and ask questions — it dispatches 5 specialist agents in parallel, then a Consensus agent synthesizes their findings into a unified report.
 
 ## 🧠 Architecture
 
@@ -40,14 +41,14 @@ User Query
 
 ## 🛠️ Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| **LLM** | Llama 3.2 3B Instruct (Q4_K_M GGUF) via llama-cpp-python |
-| **Agent Framework** | LangGraph (StateGraph with parallel dispatch) |
-| **UI** | Gradio 6.22.0 |
-| **Code Indexing** | ChromaDB + sentence-transformers |
+| Component            | Technology                                                   |
+| -------------------- | ------------------------------------------------------------ |
+| **LLM**              | Llama 3.2 3B Instruct (Q4_K_M GGUF) via llama-cpp-python     |
+| **Agent Framework**  | LangGraph (StateGraph with parallel dispatch)                |
+| **UI**               | Gradio 6.22.0                                                |
+| **Code Indexing**    | ChromaDB + sentence-transformers                             |
 | **GPU Acceleration** | AMD ROCm 7.2.1 / HIP 7.2.53211 (Radeon gfx1100) — 10.3 tok/s |
-| **Tunneling** | rc-tunnel (FRPC) for public access |
+| **Tunneling**        | rc-tunnel (FRPC) for public access                           |
 
 ## 📊 Live Demo Results
 
@@ -55,45 +56,48 @@ User Query
 
 **Analysis Output:**
 
-| Metric | Value |
-|--------|-------|
-| **Quality Score** | 0.75 / 1.00 |
-| **Total Findings** | 30 |
-| **Critical** | 3 |
-| **High** | 8 |
-| **Medium** | 4 |
-| **Low** | 15 |
+| Metric             | Value       |
+| ------------------ | ----------- |
+| **Quality Score**  | 0.75 / 1.00 |
+| **Total Findings** | 30          |
+| **Critical**       | 3           |
+| **High**           | 8           |
+| **Medium**         | 4           |
+| **Low**            | 15          |
 
 ### 🔴 Critical Findings
+
 - `dockerfile.security.missing-user.missing-user` — Dockerfile missing USER directive
 - `python.sqlalchemy.security.sqlalchemy-execute-raw-query` — Raw SQLAlchemy query execution
 - `python.lang.security.audit.subprocess-shell-true` — `subprocess` call with `shell=True`
 
 ### 🟠 High Findings
+
 - `python.lang.security.audit.md5-used-as-password` — MD5 hash used for security
 - `python.lang.security.audit.formatted-sql-query` — Formatted SQL query vulnerable to injection
 - 6 additional high-severity Bandit findings
 
 ### Agent Breakdown
-| Agent | Findings |
-|-------|----------|
-| 🔒 Security | 18 (3 critical, 6 high) |
-| 🚀 DevOps | 7 (0 critical, 2 high) |
-| ⚡ Performance | 4 |
-| 🏗️ Architecture | 1 |
+
+| Agent           | Findings                |
+| --------------- | ----------------------- |
+| 🔒 Security     | 18 (3 critical, 6 high) |
+| 🚀 DevOps       | 7 (0 critical, 2 high)  |
+| ⚡ Performance  | 4                       |
+| 🏗️ Architecture | 1                       |
 
 ## � GPU Acceleration (ROCm/HIP)
 
 llama-cpp-python compiled with HIP BLAS for native AMD GPU inference:
 
-| Metric | Value |
-|--------|-------|
-| **GPU** | AMD Radeon Graphics gfx1100 |
-| **ROCm** | 7.2.1 / HIP 7.2.53211 |
-| **Model** | Llama-3.2-3B-Instruct-Q4_K_M (2.02 GB) |
-| **Model Load** | 1.5s |
+| Metric              | Value                                     |
+| ------------------- | ----------------------------------------- |
+| **GPU**             | AMD Radeon Graphics gfx1100               |
+| **ROCm**            | 7.2.1 / HIP 7.2.53211                     |
+| **Model**           | Llama-3.2-3B-Instruct-Q4_K_M (2.02 GB)    |
+| **Model Load**      | 1.5s                                      |
 | **Inference Speed** | **10.3 tok/s** (steady-state ~11.0 tok/s) |
-| **GPU Layers** | All layers offloaded (`n_gpu_layers=-1`) |
+| **GPU Layers**      | All layers offloaded (`n_gpu_layers=-1`)  |
 
 ```bash
 # GPU setup (one-time):
@@ -114,7 +118,7 @@ pip install llama-cpp-python --force-reinstall --no-cache-dir \
 ## 📁 Project Structure
 
 ```
-forgeai/
+kutaar/
 ├── src/
 │   ├── ui/
 │   │   └── gradio_app.py          # Gradio chat interface
@@ -163,4 +167,4 @@ python src/ui/gradio_app.py
 
 ---
 
-*Built for AMD AI DevMaster Hackathon Track 2 — August 2026*
+_Built for AMD AI DevMaster Hackathon Track 2 — August 2026_

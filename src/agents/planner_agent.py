@@ -16,7 +16,7 @@ from src.state.conversation_state import AgentFinding
 
 logger = logging.getLogger(__name__)
 
-PLANNER_SYSTEM_PROMPT = """You are the **Planner Agent** of ForgeAI, an AI-powered code review assistant running on AMD ROCm.
+PLANNER_SYSTEM_PROMPT = """You are the **Planner Agent** of Kutaar, an AI-powered code review assistant running on AMD ROCm.
 
 Your role:
 1. Understand the user's question about their codebase

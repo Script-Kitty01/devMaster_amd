@@ -1,5 +1,5 @@
 """
-Base Agent — abstract foundation for all ForgeAI specialist agents.
+Base Agent — abstract foundation for all Kutaar specialist agents.
 
 Each agent:
 - Has a system prompt defining its role and expertise

@@ -15,7 +15,7 @@ from src.state.conversation_state import AgentFinding
 
 logger = logging.getLogger(__name__)
 
-DEVOPS_SYSTEM_PROMPT = """You are the **DevOps Agent** of ForgeAI, an AI-powered code review assistant.
+DEVOPS_SYSTEM_PROMPT = """You are the **DevOps Agent** of Kutaar, an AI-powered code review assistant.
 
 Your expertise:
 - Docker and containerization best practices
