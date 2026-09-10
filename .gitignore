@@ -26,4 +26,5 @@ Thumbs.db
 
 # Test artifacts
 test_*.py
-!test_*.py  # keep test files in src/
+!tests/
+!tests/test_*.py

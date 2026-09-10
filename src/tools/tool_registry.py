@@ -280,15 +280,23 @@ def _validate_dockerfile(repo_path: str, **kwargs: Any) -> ToolResult:
 
         for check_name, (pattern, advice) in checks.items():
             matches = re.findall(pattern, content, re.IGNORECASE)
-            if check_name.startswith("no_") or check_name.startswith("uses_"):
-                # These are "bad if found" checks
-                if matches and not check_name.startswith("uses_"):
+            if check_name.startswith("no_"):
+                # These are "bad if found" checks.
+                if matches:
                     df_findings["checks"].append(
                         {"check": check_name, "status": "warning", "advice": advice, "matches": matches[:5]}
                     )
-                elif check_name.startswith("uses_") and not matches:
+            elif check_name == "uses_pin_version":
+                if not matches:
                     df_findings["checks"].append(
                         {"check": check_name, "status": "warning", "advice": advice}
+                    )
+            elif check_name == "uses_copy_not_add":
+                # Despite its historical name, this pattern detects the unsafe
+                # alternative (ADD), so a match is a warning.
+                if matches:
+                    df_findings["checks"].append(
+                        {"check": check_name, "status": "warning", "advice": advice, "matches": matches[:5]}
                     )
             else:
                 # These are "good if found" checks
@@ -384,8 +392,21 @@ def _read_file(repo_path: str, *, file_path: str = "", start_line: int = 1, end_
             error="missing file_path",
         )
 
-    full_path = Path(repo_path) / file_path
-    if not full_path.exists():
+    repo_root = Path(repo_path).resolve()
+    candidate = Path(file_path)
+    full_path = (candidate if candidate.is_absolute() else repo_root / candidate).resolve()
+    try:
+        full_path.relative_to(repo_root)
+    except ValueError:
+        return ToolResult(
+            tool_name="read_file",
+            success=False,
+            summary="Requested file is outside the repository.",
+            elapsed_ms=(time.perf_counter() - t0) * 1000,
+            error="path traversal blocked",
+        )
+
+    if not full_path.is_file():
         return ToolResult(
             tool_name="read_file",
             success=False,
@@ -523,8 +544,9 @@ class ToolRegistry:
                 error=f"Tool '{tool_name}' not registered",
             )
 
-        # Always inject repo_path
-        kwargs.setdefault("repo_path", self.repo_path)
+        # The registry's repository boundary is authoritative.  Callers must
+        # not be able to redirect a tool to an arbitrary filesystem path.
+        kwargs["repo_path"] = self.repo_path
 
         logger.info("Invoking tool: %s with args: %s", tool_name, {k: str(v)[:80] for k, v in kwargs.items()})
         result = tool.func(**kwargs)

@@ -85,8 +85,6 @@ class KutaarWorkflow:
         rag_context = state.get("retrieved_snippets", [])
         history = self._format_history(state)
 
-        plan_findings = self.planner.analyze(user_query, rag_context, history)
-
         elapsed = (time.perf_counter() - t0) * 1000
         self._log_inference(state, "planner", elapsed)
 
@@ -97,9 +95,6 @@ class KutaarWorkflow:
 
     def _node_rag_retrieve(self, state: ConversationState) -> dict:
         """RAG node: retrieve relevant code snippets for the query."""
-        if not self.rag_store.is_ready:
-            return {"retrieved_snippets": []}
-
         user_query = self._get_last_user_message(state)
         snippets = self.rag_store.query(
             user_query,
@@ -135,12 +130,9 @@ class KutaarWorkflow:
 
         user_query = self._get_last_user_message(state)
 
-        # Run cross-review debate
-        debate_rounds = self.consensus.run_debate(
-            self._specialists,
-            all_findings,
-            max_rounds=2,
-        )
+        # Keep interactive responses bounded. Debate is an optional deep-review
+        # pass and otherwise adds several serialized LLM calls before a reply.
+        debate_rounds = []
 
         # Synthesize final verdict
         consensus = self.consensus.synthesize(all_findings, user_query)

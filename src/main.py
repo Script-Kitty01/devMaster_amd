@@ -87,7 +87,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--model-path",
-        default="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        default="models/Qwen3-8B-Q4_K_M.gguf",
         help="Path to GGUF model file",
     )
     parser.add_argument(

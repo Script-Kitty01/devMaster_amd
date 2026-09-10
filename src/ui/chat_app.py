@@ -2,8 +2,9 @@
 Streamlit Chat UI — conversational interface for Kutaar.
 
 Features:
-- Chat interface with agent identity labels
-- Expandable finding cards with severity badges
+- Dual Modes: "Classic Review" (multi-agent code review) & "Task Mode" (evidence-driven autonomous repair)
+- Task Mode: Phase timeline, profile selection, evidence links, diff preview, approval boundary, verification table
+- Expandable finding cards with verification status & evidence citations
 - Tool execution log panel
 - Benchmark sidebar with ROCm metrics
 - Repository upload & indexing
@@ -12,11 +13,21 @@ Features:
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from pathlib import Path
 from typing import Any, Optional
 
 import streamlit as st
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+DEFAULT_REPO_PATH = str(PROJECT_ROOT / "demo_repos" / "fastapi_service")
+
+from src.agents.agent_registry import available_profiles
+from src.state.task_state import initial_task_state
+from src.graph.task_workflow import TaskWorkflow
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +52,11 @@ def init_session() -> None:
     """Initialize Streamlit session state."""
     defaults = {
         "messages": [],
-        "repo_path": "",
+        "repo_path": DEFAULT_REPO_PATH,
+        "indexed_repo_path": "",
         "repo_indexed": False,
         "workflow": None,
+        "task_workflow": None,
         "llm": None,
         "rag_store": None,
         "tool_registry": None,
@@ -51,6 +64,11 @@ def init_session() -> None:
         "benchmark_results": None,
         "show_tools": False,
         "show_benchmarks": False,
+        "app_mode": "Task Mode (Autonomous)",
+        "task_state": None,
+        "selected_profiles": ["investigator", "security_reviewer", "review"],
+        "task_intent": "Review",
+        "pending_approval": False,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -93,17 +111,44 @@ def render_sidebar() -> None:
                 st.session_state.thread_id = f"kutaar-{int(time.time())}"
                 st.rerun()
 
-        if st.session_state.repo_indexed:
-            st.success(f"✅ Indexed: {Path(st.session_state.repo_path).name}")
+        if (
+            st.session_state.repo_indexed
+            and st.session_state.indexed_repo_path == st.session_state.repo_path
+        ):
+            st.success(f"✅ Indexed: {Path(st.session_state.indexed_repo_path).name}")
+
+        st.divider()
+
+        st.subheader("Workspace Mode")
+        st.session_state.app_mode = st.radio(
+            "Workflow",
+            ["Task Mode (Autonomous)", "Classic Review"],
+            key="app_mode_selector",
+        )
+        if st.session_state.app_mode.startswith("Task"):
+            st.session_state.task_intent = st.selectbox(
+                "Task type", ["Review", "Diagnose", "Change"], key="task_intent_selector"
+            )
+            profiles = available_profiles()
+            selected = st.multiselect(
+                "Team profiles",
+                options=list(profiles),
+                default=[p for p in st.session_state.selected_profiles if p in profiles],
+                format_func=lambda name: profiles[name].title,
+            )
+            st.session_state.selected_profiles = selected
+            st.caption("Change tasks pause before worktree mutation for approval.")
 
         st.divider()
 
         # Model info
         st.subheader("🧠 Model")
         if st.session_state.llm and st.session_state.llm.is_ready:
-            st.info(f"ROCm GPU — {st.session_state.llm.backend.upper()}")
+            backend = st.session_state.llm.backend.upper()
+            st.info(f"LLM backend — {backend}")
         elif st.session_state.llm:
-            st.warning(f"CPU Fallback — model not loaded")
+            reason = getattr(st.session_state.llm, "fallback_reason", "") or "model not loaded"
+            st.warning(f"LLM unavailable — {reason}")
         else:
             st.warning("LLM not initialized")
 
@@ -154,6 +199,13 @@ def _index_repository(repo_path: str) -> None:
             st.session_state.llm = ROCmLLM.get_instance()
             st.session_state.llm.initialize()
 
+        # A different repository must not reuse tools or a checkpointed graph
+        # that still points at the previous repository.
+        if st.session_state.indexed_repo_path != repo_path:
+            st.session_state.tool_registry = None
+            st.session_state.workflow = None
+            st.session_state.thread_id = f"kutaar-{int(time.time())}"
+
         if st.session_state.rag_store is None:
             st.session_state.rag_store = RAGStore(persist_dir="./chroma_db")
             st.session_state.rag_store.initialize()
@@ -172,6 +224,8 @@ def _index_repository(repo_path: str) -> None:
         )
 
         st.session_state.repo_indexed = True
+        st.session_state.indexed_repo_path = repo_path
+        st.session_state.repo_path = repo_path
         st.success(f"Indexed {count} code chunks from {indexer.stats()['file_count']} files.")
 
     except Exception as exc:
@@ -202,7 +256,11 @@ def render_chat() -> None:
                 _render_tool_logs(msg["tool_logs"])
 
     # Chat input
-    if prompt := st.chat_input("Ask about your codebase...", disabled=not st.session_state.repo_indexed):
+    active_repo_indexed = (
+        st.session_state.repo_indexed
+        and st.session_state.indexed_repo_path == st.session_state.repo_path
+    )
+    if prompt := st.chat_input("Ask about your codebase...", disabled=not active_repo_indexed):
         _handle_user_message(prompt)
 
 
@@ -249,6 +307,9 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
     from src.tools.tool_registry import ToolRegistry
     from src.graph.workflow import KutaarWorkflow
 
+    if st.session_state.indexed_repo_path != st.session_state.repo_path:
+        raise ValueError("Index the selected repository before starting a chat.")
+
     # Lazy-init components
     if st.session_state.llm is None:
         st.session_state.llm = ROCmLLM.get_instance()
@@ -260,6 +321,9 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
 
     if st.session_state.tool_registry is None:
         st.session_state.tool_registry = ToolRegistry(st.session_state.repo_path)
+
+    if st.session_state.app_mode.startswith("Task"):
+        return _run_task_workflow(prompt)
 
     if st.session_state.workflow is None:
         wf = KutaarWorkflow(
@@ -290,6 +354,9 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
         last_msg = messages[-1]
         response_text = last_msg.content if hasattr(last_msg, "content") else str(last_msg)
 
+    if not response_text.strip():
+        response_text = "The workflow completed without a response. Check the LLM service logs and try again."
+
     # Collect findings
     findings = []
     for agent_key in ["security", "performance", "architecture", "devops"]:
@@ -298,6 +365,61 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
 
     # Collect tool logs
     tool_logs = [dict(t) for t in result.get("tool_logs", [])]
+
+    return response_text, findings, tool_logs
+
+
+def _run_task_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
+    """Run the evidence-driven task graph and render its state as chat output."""
+    if st.session_state.task_workflow is None:
+        st.session_state.task_workflow = TaskWorkflow(
+            st.session_state.llm,
+            rag_store=st.session_state.rag_store,
+            tool_registry=st.session_state.tool_registry,
+        ).compile()
+
+    result = st.session_state.task_workflow.invoke(
+        initial_task_state(
+            repo_path=st.session_state.repo_path,
+            task_text=prompt,
+        ) | {"selected_profiles": st.session_state.selected_profiles},
+    )
+    st.session_state.task_state = result
+
+    response_text = result.get("report", "Task workflow did not produce a report.")
+    findings = [dict(f) for f in result.get("findings", [])]
+    tool_logs = [dict(t) for t in result.get("tool_logs", [])]
+
+    with st.expander("Task timeline", expanded=True):
+        phases = ["intake", "recon", "team", "investigate", "plan", "approval", "implement", "verify", "review", "report"]
+        current = result.get("phase", "report")
+        st.write(" → ".join(("✅ " if p == current or phases.index(p) < phases.index(current) else "○ ") + p.title() for p in phases))
+        st.caption(result.get("phase_detail", ""))
+        st.caption(f"Worktree: {result.get('worktree_path') or 'not created'} | Branch: {result.get('worktree_branch') or 'none'}")
+
+    if result.get("patch_proposal"):
+        proposal = result["patch_proposal"]
+        with st.expander("Patch proposal", expanded=True):
+            st.write(proposal.get("summary", ""))
+            st.caption(f"Risk: {proposal.get('risk_level', 'unknown')} | Files: {', '.join(proposal.get('files_changed', []))}")
+            if proposal.get("unified_diff"):
+                st.code(proposal["unified_diff"], language="diff")
+            st.caption(f"Evidence: {', '.join(proposal.get('linked_evidence_ids', [])) or 'none'}")
+
+        if result.get("approval_required") and not result.get("approved"):
+            if st.button("Approve and run in isolated worktree", type="primary"):
+                approved_state = dict(result)
+                approved_state["approved"] = True
+                approved_state["phase"] = "approval"
+                result = st.session_state.task_workflow.invoke(approved_state)
+                st.session_state.task_state = result
+
+    if result.get("verification_results"):
+        with st.expander("Verification", expanded=True):
+            st.dataframe([
+                {"check": v.get("name"), "status": v.get("status"), "exit": v.get("exit_code"), "summary": v.get("summary", "")}
+                for v in result["verification_results"]
+            ], use_container_width=True, hide_index=True)
 
     return response_text, findings, tool_logs
 

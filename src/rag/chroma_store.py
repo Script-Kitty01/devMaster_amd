@@ -132,7 +132,9 @@ class RAGStore:
 
             embeddings = embed_fn(documents)
 
-            self._collection.add(
+            # Re-indexing an unchanged repository is expected.  Upsert keeps
+            # stable chunk IDs from causing a duplicate-ID failure.
+            self._collection.upsert(
                 ids=ids,
                 documents=documents,
                 embeddings=embeddings,
@@ -171,11 +173,16 @@ class RAGStore:
 
         query_embedding = embed_fn([query_text])[0]
 
-        where_filter: Optional[dict] = None
+        filters: list[dict[str, str]] = []
         if filter_language:
-            where_filter = {"language": filter_language}
+            filters.append({"language": filter_language})
         if filter_file:
-            where_filter = {"file_path": filter_file}
+            filters.append({"file_path": filter_file})
+        where_filter: Optional[dict] = None
+        if len(filters) == 1:
+            where_filter = filters[0]
+        elif filters:
+            where_filter = {"$and": filters}
 
         results = self._collection.query(
             query_embeddings=[query_embedding],
