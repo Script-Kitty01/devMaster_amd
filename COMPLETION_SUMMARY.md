@@ -11,12 +11,14 @@ I have **completed all locally actionable phases (0, 3-5)** and prepared remote-
 ### ✅ Code Implementation (4 files modified, 9 created)
 
 **Modified:**
+
 - `src/llm/rocm_service.py` — Backend selection, diagnostics, environment variables
 - `src/ui/gradio_app.py` — Truthful backend status display
-- `src/ui/chat_app.py` — Truthful backend status display  
+- `src/ui/chat_app.py` — Truthful backend status display
 - `README.md` — ROCm migration status and configuration examples
 
 **Created:**
+
 - `tests/test_backend_selection.py` — 4 new backend selection tests
 - `scripts/baseline.ps1` — Phase 0 baseline capture
 - `scripts/verify_rocm_host.py` — Phase 1 verification (ready for remote)
@@ -32,13 +34,13 @@ I have **completed all locally actionable phases (0, 3-5)** and prepared remote-
 
 ### ✅ Documentation Created
 
-| Document | Size | Purpose |
-|----------|------|---------|
-| `STATUS.md` | 8.2 KB | Executive summary (read this first!) |
-| `IMPLEMENTATION_SUMMARY.md` | 8.1 KB | Detailed technical implementation |
-| `QUICK_START_NEXT_PHASE.md` | 4.9 KB | Step-by-step for next phases |
-| `MIGRATION_CHECKLIST.md` | 6.2 KB | Detailed validation checklist |
-| `next_steps.md` | 2.0 KB | High-level overview |
+| Document                    | Size   | Purpose                              |
+| --------------------------- | ------ | ------------------------------------ |
+| `STATUS.md`                 | 8.2 KB | Executive summary (read this first!) |
+| `IMPLEMENTATION_SUMMARY.md` | 8.1 KB | Detailed technical implementation    |
+| `QUICK_START_NEXT_PHASE.md` | 4.9 KB | Step-by-step for next phases         |
+| `MIGRATION_CHECKLIST.md`    | 6.2 KB | Detailed validation checklist        |
+| `next_steps.md`             | 2.0 KB | High-level overview                  |
 
 ## The Solution
 
@@ -66,7 +68,7 @@ print(diag['embedding_device'])    # GPU or CPU embeddings
 ```
 Phase 0: Baseline       ✅ Done
 Phase 1: Verify Host    ⏳ Script ready → Run on remote
-Phase 2: Build HIP      ⏳ Script ready → Run on remote  
+Phase 2: Build HIP      ⏳ Script ready → Run on remote
 Phase 3: Config         ✅ Done
 Phase 4: Embeddings     ✅ Done
 Phase 5: Integration    ✅ Done
@@ -75,29 +77,32 @@ Phase 6: E2E Testing    ⏳ Ready → Run after Phase 2
 
 ## Metrics
 
-| Metric | Value |
-|--------|-------|
-| Code Coverage | All locally actionable phases |
-| Test Pass Rate | 11/11 (100%) |
-| Compilation Errors | 0 |
-| Documentation Pages | 5 comprehensive guides |
-| Git Commits | 2 checkpoints |
-| Total Implementation Time | ~4 hours (Phases 0, 3-5) |
-| Ready for Remote | Yes (Phases 1-2, 6) |
+| Metric                    | Value                         |
+| ------------------------- | ----------------------------- |
+| Code Coverage             | All locally actionable phases |
+| Test Pass Rate            | 11/11 (100%)                  |
+| Compilation Errors        | 0                             |
+| Documentation Pages       | 5 comprehensive guides        |
+| Git Commits               | 2 checkpoints                 |
+| Total Implementation Time | ~4 hours (Phases 0, 3-5)      |
+| Ready for Remote          | Yes (Phases 1-2, 6)           |
 
 ## Next Steps (For You)
 
 ### Immediate (5 minutes)
+
 1. Read [STATUS.md](STATUS.md) for overview
 2. Read [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) for commands
 
 ### Short-term (After Remote Host Access)
+
 1. SSH to `u-14073-bcd85560.radeon-global.anruicloud.com`
 2. Run `python3 scripts/verify_rocm_host.py` (Phase 1)
 3. Run `bash scripts/build_llama_cpp_hip.sh` (Phase 2)
 4. Validate with Gradio UI (Phase 6)
 
 ### Full Checklist
+
 See [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) for detailed validation steps
 
 ## Key Features
@@ -172,6 +177,7 @@ devmaster/
 ## Configuration Example
 
 ### Ollama (Default)
+
 ```bash
 export KUTAAR_LLM_BACKEND=ollama
 export KUTAAR_MODEL=gemma2:2b
@@ -179,6 +185,7 @@ python src/ui/gradio_app.py
 ```
 
 ### llama-cpp with ROCm (After Phase 2)
+
 ```bash
 export KUTAAR_LLM_BACKEND=llama_cpp
 export KUTAAR_MODEL=/path/to/model.gguf
@@ -187,6 +194,7 @@ python src/ui/gradio_app.py
 ```
 
 ### Hard-Fail Mode
+
 ```bash
 export KUTAAR_LLM_BACKEND=llama_cpp
 export KUTAAR_ALLOW_CPU_FALLBACK=0
@@ -205,6 +213,7 @@ export KUTAAR_ALLOW_CPU_FALLBACK=0
 **Next Action**: Read [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) and execute Phase 1 on remote host!
 
 **Questions?** Check the detailed guides:
+
 - Implementation details → [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)
 - Step-by-step commands → [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)
 - Validation checklist → [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md)

@@ -1,27 +1,29 @@
 # 🎯 START HERE - ROCm Migration Complete
 
 ## What You Asked For
+
 > "start implementing the plan.md"
 
 ## What You Got ✅
 
 **All locally actionable phases implemented, tested, and documented.**
 
-| Metric | Result |
-|--------|--------|
-| Phases Complete | 0, 3-5 (all local work) |
-| Tests Passing | 11/11 ✅ |
-| Errors | 0 |
-| Documentation | 8 guides, 1,785 lines |
-| Git Commits | 6 checkpoints |
-| Code Quality | Perfect |
-| Time Estimate | ~4 hours local, 45-60 min remote |
+| Metric          | Result                           |
+| --------------- | -------------------------------- |
+| Phases Complete | 0, 3-5 (all local work)          |
+| Tests Passing   | 11/11 ✅                         |
+| Errors          | 0                                |
+| Documentation   | 8 guides, 1,785 lines            |
+| Git Commits     | 6 checkpoints                    |
+| Code Quality    | Perfect                          |
+| Time Estimate   | ~4 hours local, 45-60 min remote |
 
 ---
 
 ## The Fastest Path Forward
 
 ### 📚 Read These (In Order)
+
 1. **This file** (you're reading it)
 2. [README_DOCUMENTATION.md](README_DOCUMENTATION.md) - Navigation guide (2 min)
 3. [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md) - What was built (3 min)
@@ -30,6 +32,7 @@
 **Total reading time: ~10 minutes**
 
 ### 🚀 To Run Phase 1-2 (Remote)
+
 [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) has exact commands.
 
 ---
@@ -37,6 +40,7 @@
 ## What's Inside
 
 ### Code (Ready to Use)
+
 ```
 ✅ src/llm/rocm_service.py       - Backend selection
 ✅ src/ui/gradio_app.py          - Web UI (updated)
@@ -48,6 +52,7 @@
 ```
 
 ### Documentation (Comprehensive)
+
 ```
 README_DOCUMENTATION.md      ← Navigation (start here!)
 FINAL_SUMMARY.txt            ← Visual summary
@@ -60,6 +65,7 @@ IMPLEMENTATION_CHECKLIST.md  ← 100+ items, all checked
 ```
 
 ### Git History (6 Commits)
+
 ```
 95d9fda Add final summary: ROCm migration implementation complete ✅
 9f2b6c1 Add documentation index guide
@@ -74,7 +80,8 @@ ea6c93a Add implementation checklist: All items complete ✅
 ## Key Facts
 
 ### What Was Built
-- **Explicit backend selection** via environment variables (KUTAAR_*)
+
+- **Explicit backend selection** via environment variables (KUTAAR\_\*)
 - **Truthful diagnostics** showing actual vs requested backend
 - **Embedding device visibility** (GPU vs CPU tracking)
 - **Both UIs updated** (Gradio and Streamlit)
@@ -82,6 +89,7 @@ ea6c93a Add implementation checklist: All items complete ✅
 - **Baseline captured** (6.06s Ollama latency, 184 packages)
 
 ### What Works Now
+
 ```bash
 # Test Ollama (default)
 export KUTAAR_LLM_BACKEND=ollama
@@ -98,6 +106,7 @@ python src/ui/gradio_app.py
 ```
 
 ### Test Results
+
 ```
 11 passed in 0.40s ✅
 - test_llm_config_env_selects_backend ✓
@@ -112,6 +121,7 @@ python src/ui/gradio_app.py
 ## What's Next (Phases 1-2, 6)
 
 ### Phase 1: Remote Verification (5-10 min)
+
 ```bash
 # SSH to: u-14073-bcd85560.radeon-global.anruicloud.com
 python3 scripts/verify_rocm_host.py
@@ -119,6 +129,7 @@ python3 scripts/verify_rocm_host.py
 ```
 
 ### Phase 2: HIP Build (10-30 min)
+
 ```bash
 # On same host
 export AMDGPU_TARGETS=gfx1100
@@ -127,6 +138,7 @@ bash scripts/build_llama_cpp_hip.sh
 ```
 
 ### Phase 6: Validation (15-20 min)
+
 ```bash
 # After Phase 2 succeeds
 export KUTAAR_LLM_BACKEND=llama_cpp
@@ -141,6 +153,7 @@ See [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) for detailed steps.
 ## Quick Commands
 
 ### Verify Everything Works Locally
+
 ```powershell
 # Run all tests
 .venv\Scripts\python.exe -m pytest tests/ -q
@@ -152,6 +165,7 @@ See [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) for detailed steps.
 ```
 
 ### View Implementation
+
 ```powershell
 # See backend selection logic
 code src/llm/rocm_service.py
@@ -164,6 +178,7 @@ code tests/test_backend_selection.py
 ```
 
 ### View Documentation
+
 ```powershell
 # Navigation guide
 code README_DOCUMENTATION.md
@@ -227,22 +242,26 @@ code QUICK_START_NEXT_PHASE.md
 ## What to Do Now
 
 ### Option 1: Understand (5-10 min read)
+
 1. Read this file ✓ (you're reading it)
 2. Read [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md)
 3. Read [STATUS.md](STATUS.md)
 
 ### Option 2: Deep Dive (20 min read)
+
 1. Read [README_DOCUMENTATION.md](README_DOCUMENTATION.md)
 2. Read [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)
 3. Browse source files
 
 ### Option 3: Execute (Get remote access first)
+
 1. Read [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)
 2. SSH to `u-14073-bcd85560.radeon-global.anruicloud.com`
 3. Run Phase 1-2 scripts
 4. Validate with Phase 6
 
 ### Option 4: Validate (10 min)
+
 1. Run: `.venv\Scripts\python.exe -m pytest tests/ -q`
 2. Read: [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md)
 3. Confirm: All items checked ✅
@@ -251,13 +270,13 @@ code QUICK_START_NEXT_PHASE.md
 
 ## Questions?
 
-| Question | Answer | File |
-|----------|--------|------|
-| What was built? | 4 files modified, 14+ created | [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md) |
-| Is it tested? | Yes, 11/11 passing | [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) |
-| How do I run Phase 1-2? | See exact commands | [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) |
-| What are the phases? | 0-6 defined, 0,3-5 done | [STATUS.md](STATUS.md) |
-| Where do I start? | This file! | START_HERE.md ← You are here |
+| Question                | Answer                        | File                                                       |
+| ----------------------- | ----------------------------- | ---------------------------------------------------------- |
+| What was built?         | 4 files modified, 14+ created | [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md)             |
+| Is it tested?           | Yes, 11/11 passing            | [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) |
+| How do I run Phase 1-2? | See exact commands            | [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)     |
+| What are the phases?    | 0-6 defined, 0,3-5 done       | [STATUS.md](STATUS.md)                                     |
+| Where do I start?       | This file!                    | START_HERE.md ← You are here                               |
 
 ---
 
@@ -274,6 +293,7 @@ code QUICK_START_NEXT_PHASE.md
 ---
 
 ## Navigation
+
 - **Where to start?** → You are here!
 - **Quick overview?** → [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md)
 - **How to run next phase?** → [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)

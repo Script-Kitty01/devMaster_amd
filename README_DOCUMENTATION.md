@@ -3,14 +3,18 @@
 ## START HERE
 
 ### 🎯 Quick Overview (2 min read)
+
 → **[COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md)**
+
 - What was delivered
 - Key features implemented
 - Success criteria met
 - Next steps at a glance
 
 ### 📊 Current Status (3 min read)
+
 → **[STATUS.md](STATUS.md)**
+
 - Detailed status by phase
 - What's complete vs. ready
 - Architecture diagram
@@ -19,14 +23,18 @@
 ## For Implementation Details
 
 ### 🔧 Technical Deep Dive (5 min read)
+
 → **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)**
+
 - Phase-by-phase breakdown
 - Code segments explained
 - Dependencies and interactions
 - Design decisions
 
 ### ✅ Validation Checklist (reference)
+
 → **[IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md)**
+
 - Item-by-item completion list
 - Metrics and quality assurance
 - All 100+ items checked
@@ -34,21 +42,27 @@
 ## For Next Steps
 
 ### 🚀 Quick Start - Phases 1-2 & 6 (most important!)
+
 → **[QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)**
+
 - Step-by-step execution guide
 - SSH and remote commands
 - Troubleshooting tips
 - Success indicators
 
 ### 📋 Detailed Validation Procedure
+
 → **[MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md)**
+
 - All phases listed with checkboxes
 - Prerequisites for each phase
 - Success criteria defined
 - Rollback procedures
 
 ### 📝 High-Level Procedure (quick reference)
+
 → **[next_steps.md](next_steps.md)**
+
 - Condensed overview
 - Key scripts and commands
 - Environment setup
@@ -56,21 +70,25 @@
 ## By Use Case
 
 ### "I want to understand what was built"
+
 1. Start: [COMPLETION_SUMMARY.md](COMPLETION_SUMMARY.md) (what was delivered)
 2. Then: [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) (how it works)
 3. Reference: [STATUS.md](STATUS.md) (current state)
 
 ### "I need to run the next phase"
+
 1. Start: [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) (exact commands)
 2. Reference: [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) (validation steps)
 3. Troubleshoot: [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md) (debugging section)
 
 ### "I want to validate everything works"
+
 1. Start: [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) (all items)
 2. Test: Run `.venv\Scripts\python.exe -m pytest tests/ -q`
 3. Verify: Check all 11/11 passing
 
 ### "I need to understand the architecture"
+
 1. Read: [STATUS.md](STATUS.md) (has architecture diagram)
 2. Deep dive: [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) (component details)
 3. Code: `src/llm/rocm_service.py` (source of truth)
@@ -104,19 +122,20 @@ Scripts/
 
 ## Document Sizes (for reference)
 
-| Document | Size | Read Time | Best For |
-|----------|------|-----------|----------|
-| COMPLETION_SUMMARY.md | 8.2 KB | 2-3 min | Quick overview |
-| STATUS.md | 9.1 KB | 3-4 min | Phase status |
-| QUICK_START_NEXT_PHASE.md | 4.9 KB | 2-3 min | Running next phase |
-| IMPLEMENTATION_SUMMARY.md | 8.1 KB | 5 min | Technical details |
-| MIGRATION_CHECKLIST.md | 6.2 KB | 3-4 min | Validation |
-| IMPLEMENTATION_CHECKLIST.md | 7.8 KB | 4-5 min | Completion proof |
-| next_steps.md | 2.0 KB | 1-2 min | Quick reference |
+| Document                    | Size   | Read Time | Best For           |
+| --------------------------- | ------ | --------- | ------------------ |
+| COMPLETION_SUMMARY.md       | 8.2 KB | 2-3 min   | Quick overview     |
+| STATUS.md                   | 9.1 KB | 3-4 min   | Phase status       |
+| QUICK_START_NEXT_PHASE.md   | 4.9 KB | 2-3 min   | Running next phase |
+| IMPLEMENTATION_SUMMARY.md   | 8.1 KB | 5 min     | Technical details  |
+| MIGRATION_CHECKLIST.md      | 6.2 KB | 3-4 min   | Validation         |
+| IMPLEMENTATION_CHECKLIST.md | 7.8 KB | 4-5 min   | Completion proof   |
+| next_steps.md               | 2.0 KB | 1-2 min   | Quick reference    |
 
 ## Quick Commands
 
 ### Verify Local State
+
 ```powershell
 # Run all tests
 .venv\Scripts\python.exe -m pytest tests/ -q
@@ -132,6 +151,7 @@ git log --oneline -4
 ```
 
 ### Test Environment Variables
+
 ```powershell
 # Test Ollama backend (default)
 $env:KUTAAR_LLM_BACKEND = "ollama"
@@ -144,6 +164,7 @@ $env:KUTAAR_GPU_LAYERS = -1
 ```
 
 ### Start UIs
+
 ```powershell
 # Gradio
 python src/ui/gradio_app.py
@@ -166,16 +187,16 @@ View with: `git log --oneline -10`
 
 ## Implementation Stats
 
-| Category | Count |
-|----------|-------|
-| Code files modified | 4 |
-| Code files created | 9+ |
-| Tests created | 4 |
-| Tests total passing | 11/11 |
-| Documentation guides | 7 |
-| Git commits | 4 |
-| Compilation errors | 0 |
-| Failed tests | 0 |
+| Category             | Count |
+| -------------------- | ----- |
+| Code files modified  | 4     |
+| Code files created   | 9+    |
+| Tests created        | 4     |
+| Tests total passing  | 11/11 |
+| Documentation guides | 7     |
+| Git commits          | 4     |
+| Compilation errors   | 0     |
+| Failed tests         | 0     |
 
 ## Success Criteria - ALL MET ✅
 
@@ -193,15 +214,19 @@ View with: `git log --oneline -10`
 ## Next Phase Guidance
 
 ### If you need to run Phase 1-2 immediately
+
 → Go to [QUICK_START_NEXT_PHASE.md](QUICK_START_NEXT_PHASE.md)
 
 ### If you need to validate Phase 6
+
 → Go to [MIGRATION_CHECKLIST.md](MIGRATION_CHECKLIST.md) (Phase 6 section)
 
 ### If you need architecture understanding
+
 → Go to [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)
 
 ### If you're auditing completion
+
 → Go to [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md)
 
 ---

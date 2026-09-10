@@ -161,11 +161,11 @@ KUTAAR_LLM_BACKEND=llama_cpp python -c "from src.llm.rocm_service import ROCmLLM
 
 ## Risks and Mitigations
 
-| Risk | Mitigation |
-| --- | --- |
-| Windows host cannot provide ROCm runtime | Build and run inference on Linux ROCm host; keep Windows as fallback UI host. |
-| Generic wheel replaces HIP build | Pin the source build and verify HIP symbols after installation. |
-| Wrong GPU architecture target | Read `rocminfo` and configure the reported target. |
-| Embedding model downloads or falls back silently | Use local-only loading, explicit device checks, and visible fallback status. |
-| LLM output is truncated or invalid JSON | Bound prompts/tokens, tolerate malformed findings, and always render a response. |
-| ROCm model is too slow for interactive use | Use a small quantized GGUF, tune `n_ctx`/`n_batch`, and benchmark before enabling larger models. |
+| Risk                                             | Mitigation                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Windows host cannot provide ROCm runtime         | Build and run inference on Linux ROCm host; keep Windows as fallback UI host.                    |
+| Generic wheel replaces HIP build                 | Pin the source build and verify HIP symbols after installation.                                  |
+| Wrong GPU architecture target                    | Read `rocminfo` and configure the reported target.                                               |
+| Embedding model downloads or falls back silently | Use local-only loading, explicit device checks, and visible fallback status.                     |
+| LLM output is truncated or invalid JSON          | Bound prompts/tokens, tolerate malformed findings, and always render a response.                 |
+| ROCm model is too slow for interactive use       | Use a small quantized GGUF, tune `n_ctx`/`n_batch`, and benchmark before enabling larger models. |

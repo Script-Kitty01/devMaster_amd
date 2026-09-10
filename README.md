@@ -35,27 +35,34 @@ Kutaar is a conversational assistant that analyzes your codebase through a team 
 ## ROCm Migration Status
 
 ### Current State
+
 We have completed locally actionable phases 0-5 of the ROCm migration plan:
+
 - Baseline and freezing of current state
-- Environment configuration and diagnostics 
+- Environment configuration and diagnostics
 - UI fixes and path corrections
 - All 11 tests passing
 - Full implementation of locally actionable portions
 
 ### Next Steps: Remote ROCm Host Verification and Build
+
 Following phases 6 and beyond from the migration plan, we need to:
+
 1. Verify the remote ROCm host (u-14073-bcd85560)
 2. Build HIP-enabled llama-cpp-python with GGML_HIP=ON
 3. Validate the build and integration
 
 ### Available Scripts
+
 - `scripts/verify_rocm_host.py` - Verifies ROCm host compatibility
 - `scripts/build_llama_cpp_hip.sh` - Builds llama-cpp-python with HIP support
 - `scripts/run_remote_hip_build.py` - Drives remote execution of verification and build
 
 ### Remote Execution Setup
+
 To execute on the remote ROCm host, ensure the following environment variables are set:
-- `ANRUI_BASE` = "https://radeon-global.anruicloud.com/instances/u-14073-bcd85560"  
+
+- `ANRUI_BASE` = "https://radeon-global.anruicloud.com/instances/u-14073-bcd85560"
 - `ANRUI_TOKEN` = "amd-oneclick" (or actual token)
 
 ---
@@ -179,7 +186,7 @@ streamlit run src/ui/chat_app.py
 #### Backend selection
 
 Kutaar can use either **Ollama** (default, easy to install) or a local
-**llama-cpp-python** build for ROCm/HIP GPU inference. Set these *before*
+**llama-cpp-python** build for ROCm/HIP GPU inference. Set these _before_
 launching the UI:
 
 ```bash

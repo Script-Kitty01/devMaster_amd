@@ -8,6 +8,7 @@
 ## What Was Implemented
 
 ### Phase 0: Baseline & Freeze
+
 - **Baseline script**: `scripts/baseline.ps1`
   - Captures git state, branch, commit hash
   - Freezes all pip packages to `scripts/baseline_freeze.txt` (184 packages)
@@ -16,6 +17,7 @@
 - **Purpose**: Establish measurable baseline before ROCm migration
 
 ### Phase 3: Explicit Backend Selection
+
 - **File**: `src/llm/rocm_service.py`
 - **New Config Method**: `LLMConfig.from_env()`
   - Reads environment variables to control backend selection
@@ -36,6 +38,7 @@
   - CPU fallback is controlled, not automatic
 
 ### Phase 4: ROCm Embeddings Device Tracking
+
 - **File**: `src/llm/rocm_service.py` (embed method)
 - **New Property**: `_embedding_device`
   - Tracks whether embeddings run on GPU ("cuda") or CPU ("cpu")
@@ -44,21 +47,19 @@
 - **Purpose**: Verify embedding model actually uses GPU
 
 ### Phase 5: Application Integration
+
 - **Gradio UI** (`src/ui/gradio_app.py`):
   - `model_status()` now shows:
     - ✅ LLM ready with backend name (actual vs requested)
     - ⚠️ LLM unavailable with specific fallback reason
   - Truthful status display
-  
 - **Streamlit UI** (`src/ui/chat_app.py`):
   - Model status panel shows actual backend
   - Includes fallback reason when applicable
-  
 - **README.md**:
   - Added "ROCm Migration Status" section
   - Backend selection examples for Ollama and llama-cpp
   - Links to helper scripts
-  
 - **Tests** (`tests/test_backend_selection.py`):
   - `test_llm_config_env_selects_backend()` ✓
   - `test_llm_config_defaults_to_ollama()` ✓
@@ -69,6 +70,7 @@
 ## Helper Scripts for Remote Execution
 
 ### Verification Script: `scripts/verify_rocm_host.py`
+
 - Checks ROCm prerequisites on target host
 - Verifies: rocminfo, rocm-smi, hipcc availability
 - Infers GPU architecture from rocminfo output
@@ -76,6 +78,7 @@
 - Exit code 0 on success, non-zero on failure
 
 ### Build Script: `scripts/build_llama_cpp_hip.sh`
+
 - Builds llama-cpp-python with HIP support
 - Environment variables:
   - `AMDGPU_TARGETS` (default: gfx1100)
@@ -86,6 +89,7 @@
 - Verifies HIP symbols in resulting libggml-hip.so
 
 ### Automation Helpers
+
 - `run_rocm_migration.bat` — Windows batch script setup
 - `run_rocm_migration.ps1` — PowerShell setup
 - `demo_remote_execution.py` — Shows execution approach
@@ -94,11 +98,13 @@
 ## Testing
 
 ### All Tests Passing
+
 ```
 11 passed in 0.37s
 ```
 
 ### Test Coverage
+
 - Backend configuration from environment
 - Default Ollama configuration
 - Diagnostics reporting
@@ -108,6 +114,7 @@
 ## Current Configuration
 
 From user memory and plan.md:
+
 - Remote Host: u-14073-bcd85560 at radeon-global.anruicloud.com
 - GPU: AMD Radeon gfx1100, 96 CUs, ROCm 7.2.1, 51GB VRAM
 - Python: 3.12 in /opt/venv/
@@ -117,22 +124,28 @@ From user memory and plan.md:
 ## Next Steps (Phases 1-2, 6)
 
 ### Phase 1: Verify Remote ROCm Host
+
 ```bash
 # On remote host (u-14073-bcd85560):
 python3 scripts/verify_rocm_host.py
 ```
+
 Expected output: JSON report confirming rocminfo, rocm-smi, hipcc, GPU architecture
 
 ### Phase 2: Build HIP-Enabled llama-cpp-python
+
 ```bash
 # On remote host:
 export AMDGPU_TARGETS=gfx1100  # or auto-detect from phase 1
 bash scripts/build_llama_cpp_hip.sh
 ```
+
 Expected: libggml-hip.so with HIP/hipBLAS symbols in venv lib directory
 
 ### Phase 6: End-to-End Validation
+
 On remote host with successful Phase 2 build:
+
 ```bash
 # Test 1: Direct inference
 export KUTAAR_LLM_BACKEND=llama_cpp
@@ -157,6 +170,7 @@ python -m src.main --benchmark
 ## Rollback Plan
 
 If issues arise:
+
 ```bash
 export KUTAAR_LLM_BACKEND=ollama
 export KUTAAR_MODEL=gemma2:2b
@@ -166,12 +180,14 @@ export KUTAAR_MODEL=gemma2:2b
 ## Files Modified/Created
 
 ### Modified
+
 - `src/llm/rocm_service.py` — Backend selection, diagnostics
 - `src/ui/gradio_app.py` — Truthful status display
 - `src/ui/chat_app.py` — Truthful status display
 - `README.md` — ROCm migration status section
 
 ### Created
+
 - `scripts/baseline.ps1` — Phase 0 baseline capture
 - `scripts/baseline_freeze.txt` — Frozen pip packages
 - `scripts/verify_rocm_host.py` — Phase 1 verification
@@ -203,6 +219,7 @@ export KUTAAR_MODEL=gemma2:2b
 - ✅ Clear rollback path available
 
 ## Git Commit
+
 ```
 Phase 5 complete: ROCm migration locally actionable phases 0-5 implemented
 - Phase 0: Baseline capture

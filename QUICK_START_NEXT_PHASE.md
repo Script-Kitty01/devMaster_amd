@@ -1,6 +1,7 @@
 # Quick Start: Next Phase (Remote ROCm Verification & Build)
 
 ## Current Status
+
 ✅ All locally actionable phases complete (Phases 0-5)
 ✅ All 11 tests passing
 ✅ Baseline captured
@@ -9,12 +10,14 @@
 ## What's Next?
 
 You need to execute **Phases 1-2** on the remote ROCm host:
+
 - **Phase 1**: Verify the host has ROCm, hipcc, proper GPU
 - **Phase 2**: Build llama-cpp-python with GGML_HIP=ON
 
 ## Quick Execution Steps
 
 ### Step 1: SSH to Remote Host
+
 ```powershell
 # From Windows, connect to the remote Radeon machine
 ssh user@u-14073-bcd85560.radeon-global.anruicloud.com
@@ -23,6 +26,7 @@ ssh user@u-14073-bcd85560.radeon-global.anruicloud.com
 ```
 
 ### Step 2: Verify ROCm Host
+
 ```bash
 # On the remote host, run:
 cd /path/to/devmaster  # Clone the repo if needed
@@ -33,6 +37,7 @@ python3 scripts/verify_rocm_host.py
 ```
 
 ### Step 3: Build HIP-Enabled llama-cpp-python
+
 ```bash
 # On the remote host:
 export AMDGPU_TARGETS=gfx1100  # Use value from verify_rocm_host.py output
@@ -49,7 +54,9 @@ bash scripts/build_llama_cpp_hip.sh
 ```
 
 ### Step 4: Validate Build Success
+
 After build completes, verify:
+
 ```bash
 # Check for HIP library
 ls -la /opt/venv/lib/python3.12/site-packages/llama_cpp/lib/libggml-hip.so*
@@ -62,7 +69,9 @@ nm -D /opt/venv/lib/python3.12/site-packages/llama_cpp/lib/libggml-hip.so | grep
 ```
 
 ### Step 5: Smoke Test
+
 Once build is verified:
+
 ```bash
 # On remote host
 source /opt/venv/bin/activate
@@ -89,18 +98,22 @@ print(f'Embedding device: {diag[\"embedding_device\"]}')
 ## Troubleshooting
 
 ### Build Fails with CMake Error
+
 - Check rocminfo output: `rocminfo`
 - Ensure ROCm 7.2+ is installed
 - Try with specific AMDGPU_TARGETS from rocminfo
 
 ### libggml-hip.so Not Found
+
 - Check build.log for errors
 - Ensure cmake configured with GGML_HIP=ON
 - Verify ninja/cmake builds completed successfully
 
 ### HIP Symbols Not Found
+
 - This means the build didn't actually use HIP
 - Re-run with explicit environment setup:
+
 ```bash
 unset CMAKE_ARGS  # Clear any old settings
 export CMAKE_ARGS="-DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1100 ..."
@@ -108,6 +121,7 @@ bash scripts/build_llama_cpp_hip.sh
 ```
 
 ### GPU Not Detected After Build
+
 - Run `rocm-smi` to verify GPU is visible to ROCm
 - Try: `python3 -c "import torch; print(torch.cuda.is_available())"`
 - If still false, ROCm/HIP not properly installed on host
@@ -115,6 +129,7 @@ bash scripts/build_llama_cpp_hip.sh
 ## Files You'll Need
 
 On the remote host, ensure you have:
+
 - `scripts/verify_rocm_host.py` - verification script
 - `scripts/build_llama_cpp_hip.sh` - build script
 - `src/llm/rocm_service.py` - LLM service with diagnostics
@@ -124,6 +139,7 @@ On the remote host, ensure you have:
 ## Post-Build: Phase 6 Validation
 
 After successful build, run on remote host:
+
 ```bash
 # Full Gradio smoke test
 python3 src/ui/gradio_app.py &  # Start in background
@@ -138,13 +154,13 @@ python3 src/ui/gradio_app.py &  # Start in background
 
 ## Quick Reference
 
-| Command | Purpose |
-|---------|---------|
+| Command                               | Purpose                |
+| ------------------------------------- | ---------------------- |
 | `python3 scripts/verify_rocm_host.py` | Check if host is ready |
-| `bash scripts/build_llama_cpp_hip.sh` | Build HIP version |
-| `rocminfo` | Verify GPU and ROCm |
-| `rocm-smi` | Check GPU memory usage |
-| `hipcc --version` | Verify HIP compiler |
+| `bash scripts/build_llama_cpp_hip.sh` | Build HIP version      |
+| `rocminfo`                            | Verify GPU and ROCm    |
+| `rocm-smi`                            | Check GPU memory usage |
+| `hipcc --version`                     | Verify HIP compiler    |
 
 ## Success Indicators
 
