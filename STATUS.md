@@ -10,8 +10,8 @@
 | 1     | Verify ROCm Host      | ⏳ Ready (remote)        | verify_rocm_host.py               |
 | 2     | Build HIP llama.cpp   | ⏳ Ready (remote)        | build_llama_cpp_hip.sh            |
 | 3     | Backend Selection     | ✅ Complete              | rocm_service.py                   |
-| 4     | Embeddings Device     | ✅ Complete              | rocm_service.py                   |
-| 5     | App Integration       | ✅ Complete              | gradio_app.py, chat_app.py, tests |
+| 4     | Embeddings Device     | ✅ Complete              | rocm_service.py, chroma_store.py  |
+| 5     | App Integration       | ✅ Complete              | gradio_app.py, chat_app.py, main.py |
 | 6     | End-to-End Validation | ⏳ Ready (after Phase 2) | QUICK_START_NEXT_PHASE.md         |
 
 ## What's Been Done
@@ -27,23 +27,32 @@
    - `LLMConfig.from_env()` reads KUTAAR\_\* environment variables
    - Supports Ollama and llama-cpp backends
    - Hard-fail mode when fallback disabled
-   - `diagnostics()` method returns truthful backend status
+   - `diagnostics()` now returns 17 truthful fields
+   - `detect_llama_cpp_runtime()` proves the backend from the ggml library that
+     is actually installed (`libggml-hip.so` → rocm, `ggml-cuda.dll` → cuda), so
+     `ROCmLLM` never claims ROCm without evidence
+   - `backend_verified` flags any claim that is not backed by evidence
+   - A CPU-only build is never handed a GPU offload request
 
 3. **Embedding Device Visible** (Phase 4)
-   - Embedding model device tracked (GPU vs CPU)
-   - Shown in `diagnostics()` output
+   - Embedding model device tracked (GPU vs CPU) and shown in `diagnostics()`
    - No silent GPU-to-CPU fallback
+   - The Chroma index records an embedding signature (model + dimension) and is
+     rebuilt automatically when it changes (`KUTAAR_EMBEDDING_MODEL`)
 
 4. **UI Truthfully Reports Status** (Phase 5)
-   - Gradio shows actual backend (configured vs active)
-   - Streamlit sidebar shows backend status
-   - fallback_reason displayed when model unavailable
-   - README updated with configuration examples
+   - Both UIs share one configuration source: `ROCmLLM.get_instance()`
+   - Gradio shows the active backend and its verification state (`status_line()`)
+   - Streamlit sidebar shows the same status line plus any fallback reason
+   - main.py prints the same status before launching a UI
+   - README updated with configuration examples and startup commands
 
 5. **Tests Validated** (Phase 5)
-   - 4 new backend selection tests added
-   - 7 existing tests still passing
-   - **Total: 11/11 tests passing** ✅
+   - 7 backend selection tests (incl. non-empty response and runtime evidence)
+   - 7 core regression tests (incl. embedding signature record/reuse/rebuild)
+   - 5 task workflow tests (plan/risk, approval gate, verification gate, reviews)
+   - 7 standalone harness checks (`python test_local_validation.py`)
+   - **Total: 19/19 unit tests + 7/7 harness checks passing** ✅
 
 ### ⏳ Remote-Ready Scripts (Phases 1-2)
 
@@ -73,24 +82,33 @@
 ## Key Files Modified
 
 ```
-src/llm/rocm_service.py          ← Backend selection, diagnostics
-src/ui/gradio_app.py              ← Truthful status display
-src/ui/chat_app.py                ← Truthful status display
-tests/test_backend_selection.py   ← 4 new backend tests
-README.md                          ← ROCm migration section
+src/llm/rocm_service.py              ← Backend selection, verified runtime detection, diagnostics
+src/rag/chroma_store.py              ← Embedding signature guard (rebuild on model/dim change)
+src/ui/gradio_app.py                 ← Truthful status display
+src/ui/chat_app.py                   ← Truthful status display
+src/main.py                          ← Shared status line + UI launch
+tests/test_backend_selection.py      ← 7 backend tests
+tests/test_core_regressions.py       ← 7 regression tests
+tests/test_task_workflow.py          ← 5 workflow tests
+README.md                            ← ROCm migration section
 ```
 
 ## Test Results
 
 ```
-11 passed in 0.40s ✅
+19 passed in ~0.5s ✅   (python -m pytest tests/ -q)
+ 7/7 passed             ✅   (python test_local_validation.py)
 
 Tests include:
 ✓ Backend configuration from environment
 ✓ Default Ollama configuration
-✓ Diagnostics reporting
+✓ Diagnostics reporting (17 fields)
 ✓ Fail-hard behavior
-✓ Existing task workflow tests (no regressions)
+✓ Non-empty response even when the model is missing
+✓ Runtime evidence detection (ggml backend library is inspected)
+✓ ROCm is never claimed without runtime evidence
+✓ Embedding signature record/reuse/rebuild (Chroma)
+✓ Core regressions and task workflow contracts
 ```
 
 ## Environment Variables
@@ -143,10 +161,12 @@ Tests include:
 ## Success Indicators
 
 ✅ All locally actionable phases complete
-✅ All tests passing (11/11)
+✅ All unit tests passing (19/19) plus 7/7 harness checks
 ✅ Baseline captured with measurable latency (6.06s)
 ✅ Backend selection is explicit and environment-driven
-✅ UI shows truthful backend status
+✅ Reported backend is verified against the installed ggml backend library
+✅ UI shows truthful backend status (configured vs active)
+✅ Chroma index rebuilds when the embedding model/dimension changes
 ✅ Helper scripts ready for remote execution
 ✅ Clear documentation for next phase
 ✅ Rollback path preserved (Ollama remains functional)
@@ -183,6 +203,15 @@ Phase 5 complete: ROCm migration locally actionable phases 0-5 implemented
 - Phase 5: Application integration
 - Helper scripts for Phases 1-2 remote execution
 - All 11 tests passing
+
+Follow-up hardening (plan.md compliance pass):
+- Phase 3: verified llama.cpp runtime detection (libggml-hip.so / ggml-cuda.* /
+  ggml-vulkan.* / ggml-metal.*) plus `backend_verified`
+- Phase 3: a CPU-only build is never handed a GPU offload request
+- Phase 3: generation always returns non-empty, actionable error text
+- Phase 4: Chroma index records an embedding signature and rebuilds on change
+- Phase 5: both UIs and main.py share one status source (`status_line()`)
+- Tests: 19/19 unit tests and 7/7 standalone harness checks passing
 ```
 
 ## Quick Reference
@@ -229,7 +258,8 @@ streamlit run src/ui/chat_app.py
 **✅ Phases 0-5 Complete and Validated**
 
 - All locally actionable work finished
-- 11/11 tests passing
+- 19/19 unit tests passing + 7/7 standalone harness checks
+- Backend reporting verified against runtime evidence (no false ROCm claims)
 - Documentation comprehensive
 - Scripts ready for remote execution
 - Baseline captured for comparison

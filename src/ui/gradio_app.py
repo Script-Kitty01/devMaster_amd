@@ -69,9 +69,11 @@ def model_status() -> str:
         loaded = _llm.initialize()
         diag = _llm.diagnostics()
         if loaded and _llm.is_ready:
+            verification = "verified" if diag["backend_verified"] else "UNVERIFIED"
             return (
                 f"✅ LLM ready — `{Path(_llm.config.model_path).name}` on **{_llm.backend.upper()}** "
-                f"(requested: {diag['configured_backend']})"
+                f"({verification}; requested: {diag['configured_backend']})\n\n"
+                f"`{_llm.status_line()}`"
             )
         reason = diag["fallback_reason"] or "model not loaded"
         return f"⚠️ LLM unavailable — {reason}"
@@ -94,8 +96,12 @@ def _index_repo(repo_path: str) -> str:
         if not chunks:
             return "⚠️ No code files found."
 
-        _rag_store.reset()
-        count = _rag_store.index_chunks(chunks, _llm.embed)
+        _rag_store.reset(embedding_model=_llm.config.embedding_model)
+        count = _rag_store.index_chunks(
+            chunks,
+            _llm.embed,
+            embedding_model=_llm.config.embedding_model,
+        )
         _repo_indexed = True
         stats = indexer.stats()
         return f"✅ Indexed {count} chunks from {stats['file_count']} files in `{Path(repo_path).name}`"

@@ -22,6 +22,7 @@ from src.models.artifacts import (
     Evidence,
     PatchProposal,
     ReviewVerdict,
+    RiskLevel,
     TaskBrief,
     VerificationResult,
 )
@@ -62,6 +63,9 @@ class TaskState(TypedDict, total=False):
 
     # --- Plan / approval ---
     implementation_plan: str
+    task_plan: str                 # alias of implementation_plan (plan.md contract name)
+    risk_level: RiskLevel          # low | medium | high (assessed deterministically)
+    verification_required: bool    # gate: completion needs passing checks
     patch_proposal: Optional[PatchProposal]
     approval_required: bool
     approved: bool
@@ -73,6 +77,7 @@ class TaskState(TypedDict, total=False):
 
     # --- Verification ---
     verification_results: list[VerificationResult]
+    verification_status: str       # passed | blocked | skipped | not_run
     retry_count: int
     max_retries: int
 
@@ -103,12 +108,17 @@ def initial_task_state(
         approved=False,
         worktree_path=None,
         worktree_branch="",
+        task_plan="",
+        implementation_plan="",
+        risk_level="low",
+        verification_required=False,
         evidence=[],
         diagnoses=[],
         findings=[],
         selected_profiles=[],
         recommended_profiles=[],
         verification_results=[],
+        verification_status="not_run",
         retry_count=0,
         max_retries=max_retries,
         review_verdict=None,

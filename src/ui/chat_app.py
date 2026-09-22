@@ -143,11 +143,14 @@ def render_sidebar() -> None:
 
         # Model info
         st.subheader("🧠 Model")
-        if st.session_state.llm and st.session_state.llm.is_ready:
-            backend = st.session_state.llm.backend.upper()
-            st.info(f"LLM backend — {backend}")
-        elif st.session_state.llm:
-            reason = getattr(st.session_state.llm, "fallback_reason", "") or "model not loaded"
+        llm = st.session_state.llm
+        if llm and getattr(llm, "is_ready", False):
+            diag = llm.diagnostics()
+            verification = "verified" if diag["backend_verified"] else "UNVERIFIED"
+            st.info(f"LLM backend — {llm.backend.upper()} ({verification})")
+            st.caption(llm.status_line())
+        elif llm:
+            reason = getattr(llm, "fallback_reason", "") or "model not loaded"
             st.warning(f"LLM unavailable — {reason}")
         else:
             st.warning("LLM not initialized")
@@ -217,10 +220,12 @@ def _index_repository(repo_path: str) -> None:
             st.warning("No code files found in repository.")
             return
 
-        st.session_state.rag_store.reset()
+        embedding_model = getattr(st.session_state.llm.config, "embedding_model", "")
+        st.session_state.rag_store.reset(embedding_model=embedding_model)
         count = st.session_state.rag_store.index_chunks(
             chunks,
             st.session_state.llm.embed,
+            embedding_model=embedding_model,
         )
 
         st.session_state.repo_indexed = True

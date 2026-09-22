@@ -71,6 +71,91 @@ def _register_cuda_dll_paths() -> None:
 _register_cuda_dll_paths()
 
 
+# ---------------------------------------------------------------------------
+# Verified runtime detection (plan.md Phase 3 items 3 & 6)
+#
+# The reported backend must be the runtime that is actually loaded, never a
+# guess based on the class name or on the requested layer count.
+# ---------------------------------------------------------------------------
+
+_GPU_BACKEND_LIBRARIES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("rocm", ("libggml-hip.so", "libggml-hip.dylib", "ggml-hip.dll", "ggml-hip.so")),
+    ("cuda", ("libggml-cuda.so", "libggml-cuda.dylib", "ggml-cuda.dll", "ggml-cuda.so")),
+    ("vulkan", ("libggml-vulkan.so", "ggml-vulkan.dll", "ggml-vulkan.so")),
+)
+
+
+def _llama_cpp_lib_dir() -> Optional[Path]:
+    """Directory holding the shared libraries shipped with llama-cpp-python."""
+    try:
+        import llama_cpp
+    except Exception:  # noqa: BLE001 - any import failure means "unknown runtime"
+        return None
+
+    package_dir = Path(getattr(llama_cpp, "__file__", "") or "").parent
+    lib_dir = package_dir / "lib"
+    return lib_dir if lib_dir.is_dir() else None
+
+
+def detect_llama_cpp_runtime() -> dict[str, Any]:
+    """Detect the ggml backend the installed llama.cpp build actually provides.
+
+    Evidence comes from:
+
+    1. the backend libraries shipped next to the ``llama_cpp`` package
+       (``libggml-hip.so`` for HIP/ROCm, ``ggml-cuda.dll`` for CUDA, ...); and
+    2. Torch's device metadata, which describes what the host exposes.
+
+    Returns ``runtime`` as ``rocm`` | ``cuda`` | ``vulkan`` | ``cpu`` | ``unknown``
+    plus the library path, human-readable evidence, GPU name and HIP version.
+    """
+    info: dict[str, Any] = {
+        "runtime": "unknown",
+        "library": "",
+        "evidence": "",
+        "gpu_name": "",
+        "hip_version": "",
+        "torch_cuda_available": False,
+    }
+
+    lib_dir = _llama_cpp_lib_dir()
+    if lib_dir is None:
+        info["evidence"] = "llama_cpp is not importable or ships no lib directory"
+    else:
+        for runtime, names in _GPU_BACKEND_LIBRARIES:
+            for name in names:
+                library = lib_dir / name
+                if library.exists():
+                    info["runtime"] = runtime
+                    info["library"] = str(library)
+                    info["evidence"] = f"found {name} next to the llama_cpp package"
+                    break
+            if info["library"]:
+                break
+
+        if not info["library"]:
+            info["runtime"] = "cpu"
+            info["evidence"] = (
+                f"no HIP/CUDA ggml backend library in {lib_dir} (CPU-only llama.cpp build)"
+            )
+
+    # Host-level device evidence (secondary — the llama.cpp build is authoritative).
+    try:
+        import torch
+
+        info["hip_version"] = str(getattr(torch.version, "hip", "") or "")
+        info["torch_cuda_available"] = bool(torch.cuda.is_available())
+        if info["torch_cuda_available"]:
+            try:
+                info["gpu_name"] = str(torch.cuda.get_device_name(0))
+            except Exception:  # noqa: BLE001
+                info["gpu_name"] = ""
+    except Exception:  # noqa: BLE001
+        info["hip_version"] = ""
+
+    return info
+
+
 @dataclass
 class LLMConfig:
     """Configuration for the ROCm LLM service.
@@ -153,6 +238,7 @@ class ROCmLLM:
         self._backend: str = "cpu"
         self._fallback_reason: str = ""
         self._initialized = False
+        self._runtime_info: dict[str, Any] = {}
         self._embedding_unavailable = False
         self._embedding_device: str = "not-loaded"
         self._inference_lock = threading.Lock()  # serialize llama-cpp calls (not thread-safe)
@@ -230,12 +316,39 @@ class ROCmLLM:
             self._initialized = True
             return False
 
+        # Verify the actual ggml backend before claiming a GPU runtime
+        # (plan.md Phase 3 item 3).
+        self._runtime_info = detect_llama_cpp_runtime()
+        gpu_runtime = str(self._runtime_info.get("runtime", "unknown"))
+        gpu_build_available = gpu_runtime in ("rocm", "cuda", "vulkan")
+        wants_gpu = self.config.n_gpu_layers != 0
+        runtime_evidence = str(self._runtime_info.get("evidence", ""))
+
+        if wants_gpu and not gpu_build_available:
+            self._fallback_reason = (
+                f"GPU offload requested (n_gpu_layers={self.config.n_gpu_layers}) but the "
+                f"installed llama.cpp build has no GPU backend: {runtime_evidence}. "
+                "Rebuild with GGML_HIP=ON (scripts/build_llama_cpp_hip.sh) to use ROCm."
+            )
+            if not self.config.allow_cpu_fallback:
+                logger.error(
+                    "%s CPU fallback disabled (KUTAAR_ALLOW_CPU_FALLBACK=0). Failing hard.",
+                    self._fallback_reason,
+                )
+                self._backend = "cpu"
+                self._initialized = True
+                return False
+            logger.warning(self._fallback_reason)
+
+        # Never request GPU layers from a CPU-only build.
+        effective_gpu_layers = self.config.n_gpu_layers if gpu_build_available else 0
+
         try:
             from llama_cpp import Llama
 
             self._llm = Llama(
                 model_path=str(model_path),
-                n_gpu_layers=self.config.n_gpu_layers,
+                n_gpu_layers=effective_gpu_layers,
                 n_ctx=self.config.n_ctx,
                 n_batch=self.config.n_batch,
                 n_threads=4,
@@ -243,11 +356,18 @@ class ROCmLLM:
                 use_mlock=False,
                 verbose=self.config.verbose,
             )
-            self._backend = "rocm" if self.config.n_gpu_layers != 0 else "cpu"
-            if self._backend == "rocm":
-                logger.info("ROCm LLM initialized successfully on GPU.")
+            if gpu_build_available and wants_gpu:
+                self._backend = gpu_runtime
+                logger.info(
+                    "llama.cpp initialized on %s (verified by %s).",
+                    gpu_runtime.upper(),
+                    self._runtime_info.get("library") or runtime_evidence,
+                )
             else:
-                logger.info("llama-cpp LLM initialized on CPU (n_gpu_layers=0).")
+                self._backend = "cpu"
+                logger.info(
+                    "llama-cpp LLM initialized on CPU (no GPU offload requested or available)."
+                )
         except Exception as exc:
             self._fallback_reason = f"Failed to load on GPU: {exc}"
             logger.warning("%s. Using CPU fallback.", self._fallback_reason)
@@ -532,13 +652,33 @@ class ROCmLLM:
     def is_ready(self) -> bool:
         return self._initialized and self._llm is not None
 
+    def _backend_is_verified(self) -> bool:
+        """True only when the reported backend matches observed runtime evidence.
+
+        A ROCm/CUDA claim requires the matching ggml backend library; Ollama and
+        CPU states are verified by a successful health check / model load.
+        """
+        if self._backend in ("rocm", "cuda", "vulkan"):
+            return bool(self._runtime_info.get("library"))
+        if self._backend == "ollama":
+            return bool(self._initialized and self._llm is not None and not self._fallback_reason)
+        return bool(self._initialized and self._llm is not None)
+
     def diagnostics(self) -> dict[str, Any]:
         """Runtime diagnostics for truthful status reporting (plan.md Phase 3)."""
+        runtime = self._runtime_info or {}
         return {
             "configured_backend": self.config.backend,
             "active_backend": self._backend,
+            "backend_verified": self._backend_is_verified(),
             "model": self.config.model_path,
             "n_gpu_layers": self.config.n_gpu_layers,
+            "gpu_offload_layers": self.config.n_gpu_layers,
+            "runtime": runtime.get("runtime", "not-checked"),
+            "runtime_evidence": runtime.get("evidence", ""),
+            "gpu_backend_library": runtime.get("library", ""),
+            "detected_gpu": runtime.get("gpu_name", ""),
+            "hip_version": runtime.get("hip_version", ""),
             "ready": self.is_ready,
             "fallback_reason": self._fallback_reason,
             "cpu_fallback_allowed": self.config.allow_cpu_fallback,
@@ -547,3 +687,24 @@ class ROCmLLM:
             "embedding_unavailable": self._embedding_unavailable,
             "ollama_url": self.config.ollama_url if self.config.backend == "ollama" else "",
         }
+
+    def status_line(self) -> str:
+        """One-line, truthful status shared by both UIs (plan.md Phase 5 item 3)."""
+        diag = self.diagnostics()
+        verified = "" if diag["backend_verified"] else " (unverified)"
+        parts = [
+            f"backend={diag['active_backend']}{verified}",
+            f"model={Path(str(diag['model'])).name}",
+            f"gpu_layers={diag['gpu_offload_layers']}",
+        ]
+        if diag["runtime"] not in ("", "not-checked"):
+            parts.append(f"runtime={diag['runtime']}")
+        if diag["detected_gpu"]:
+            parts.append(f"gpu={diag['detected_gpu']}")
+        if diag["hip_version"]:
+            parts.append(f"hip={diag['hip_version']}")
+        if diag["embedding_device"] not in ("", "not-loaded"):
+            parts.append(f"embeddings={diag['embedding_device']}")
+        if diag["fallback_reason"]:
+            parts.append(f"fallback_reason={diag['fallback_reason']}")
+        return " | ".join(parts)

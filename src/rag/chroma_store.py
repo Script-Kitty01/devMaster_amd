@@ -20,9 +20,15 @@ class RAGStore:
 
     Usage:
         store = RAGStore(persist_dir="./chroma_db")
-        store.index_chunks(chunks, embed_fn)
+        store.index_chunks(chunks, embed_fn, embedding_model="all-MiniLM-L6-v2")
         results = store.query("SQL injection vulnerability", embed_fn, k=5)
     """
+
+    # Collection metadata keys that pin an index to its embedding signature.
+    # plan.md Phase 4: an index built with another model or dimension must be
+    # rebuilt, never reused.
+    EMBEDDING_MODEL_KEY = "embedding_model"
+    EMBEDDING_DIMENSIONS_KEY = "embedding_dimensions"
 
     def __init__(self, persist_dir: str = "./chroma_db", collection_name: str = "code_chunks") -> None:
         self.persist_dir = Path(persist_dir)
@@ -35,8 +41,18 @@ class RAGStore:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def initialize(self) -> None:
-        """Create or load the ChromaDB collection."""
+    def initialize(
+        self,
+        *,
+        embedding_model: str = "",
+        embedding_dimensions: int = 0,
+    ) -> None:
+        """Create or load the ChromaDB collection.
+
+        When an embedding signature is supplied, it is compared with the
+        signature recorded in the collection metadata; a mismatch resets the
+        index so a stale model/dimension is never reused (plan.md Phase 4).
+        """
         try:
             import chromadb
             from chromadb.config import Settings
@@ -57,10 +73,14 @@ class RAGStore:
                     self.collection_name,
                     self._indexed_count,
                 )
+                self.ensure_embedding_compatibility(
+                    embedding_model=embedding_model,
+                    embedding_dimensions=embedding_dimensions,
+                )
             except Exception:
                 self._collection = self._client.create_collection(
                     name=self.collection_name,
-                    metadata={"hnsw:space": "cosine"},
+                    metadata=self._embedding_metadata(embedding_model, embedding_dimensions),
                 )
                 logger.info("Created new collection '%s'.", self.collection_name)
 
@@ -71,8 +91,8 @@ class RAGStore:
             logger.error("Failed to initialize ChromaDB: %s", exc)
             self._collection = None
 
-    def reset(self) -> None:
-        """Delete and recreate the collection."""
+    def reset(self, *, embedding_model: str = "", embedding_dimensions: int = 0) -> None:
+        """Delete and recreate the collection, re-stamping the embedding signature."""
         if self._client is not None:
             try:
                 self._client.delete_collection(self.collection_name)
@@ -80,10 +100,106 @@ class RAGStore:
                 pass
             self._collection = self._client.create_collection(
                 name=self.collection_name,
-                metadata={"hnsw:space": "cosine"},
+                metadata=self._embedding_metadata(embedding_model, embedding_dimensions),
             )
             self._indexed_count = 0
             logger.info("Collection '%s' reset.", self.collection_name)
+
+    # ------------------------------------------------------------------
+    # Embedding signature (plan.md Phase 4 item 4)
+    # ------------------------------------------------------------------
+
+    def _embedding_metadata(self, embedding_model: str, embedding_dimensions: int) -> dict[str, Any]:
+        """Collection metadata describing the embedding model that built the index."""
+        metadata: dict[str, Any] = {"hnsw:space": "cosine"}
+        if embedding_model:
+            metadata[self.EMBEDDING_MODEL_KEY] = embedding_model
+        if embedding_dimensions:
+            metadata[self.EMBEDDING_DIMENSIONS_KEY] = int(embedding_dimensions)
+        return metadata
+
+    def embedding_signature(self) -> dict[str, Any]:
+        """Return the embedding model/dimensions recorded for the open index."""
+        if self._collection is None:
+            return {self.EMBEDDING_MODEL_KEY: "", self.EMBEDDING_DIMENSIONS_KEY: 0}
+        metadata = dict(self._collection.metadata or {})
+        return {
+            self.EMBEDDING_MODEL_KEY: metadata.get(self.EMBEDDING_MODEL_KEY, ""),
+            self.EMBEDDING_DIMENSIONS_KEY: metadata.get(self.EMBEDDING_DIMENSIONS_KEY, 0),
+        }
+
+    def ensure_embedding_compatibility(
+        self,
+        *,
+        embedding_model: str = "",
+        embedding_dimensions: int = 0,
+    ) -> bool:
+        """Rebuild the index when the embedding model or dimension changed.
+
+        Only explicitly supplied values are compared, so a caller that knows
+        nothing about embeddings keeps the previous behaviour.  Returns True
+        when the collection was reset.
+        """
+        if self._collection is None:
+            return False
+
+        metadata = dict(self._collection.metadata or {})
+        stored_model = str(metadata.get(self.EMBEDDING_MODEL_KEY) or "")
+        stored_dimensions = metadata.get(self.EMBEDDING_DIMENSIONS_KEY)
+
+        model_changed = bool(embedding_model) and bool(stored_model) and stored_model != embedding_model
+        dimensions_changed = False
+        if embedding_dimensions and stored_dimensions not in (None, ""):
+            try:
+                dimensions_changed = int(stored_dimensions) != int(embedding_dimensions)
+            except (TypeError, ValueError):
+                dimensions_changed = True
+
+        if not (model_changed or dimensions_changed):
+            return False
+
+        rebuilt_dimensions = int(embedding_dimensions) if embedding_dimensions else 0
+        if not rebuilt_dimensions and stored_dimensions not in (None, ""):
+            try:
+                rebuilt_dimensions = int(stored_dimensions)
+            except (TypeError, ValueError):
+                rebuilt_dimensions = 0
+
+        logger.warning(
+            "Embedding signature changed (model %r -> %r, dimensions %s -> %s); rebuilding index '%s'.",
+            stored_model or "unknown",
+            embedding_model or stored_model or "unknown",
+            stored_dimensions if stored_dimensions not in (None, "") else "unknown",
+            embedding_dimensions or "unknown",
+            self.collection_name,
+        )
+        self.reset(
+            embedding_model=embedding_model or stored_model,
+            embedding_dimensions=rebuilt_dimensions,
+        )
+        return True
+
+    def _record_embedding_metadata(
+        self,
+        *,
+        embedding_model: str,
+        embedding_dimensions: int,
+    ) -> None:
+        """Stamp the embedding signature onto the collection for later checks."""
+        if self._collection is None or not (embedding_model or embedding_dimensions):
+            return
+
+        metadata = dict(self._collection.metadata or {})
+        metadata.setdefault("hnsw:space", "cosine")
+        if embedding_model:
+            metadata[self.EMBEDDING_MODEL_KEY] = embedding_model
+        if embedding_dimensions:
+            metadata[self.EMBEDDING_DIMENSIONS_KEY] = int(embedding_dimensions)
+
+        try:
+            self._collection.modify(metadata=metadata)
+        except Exception as exc:  # noqa: BLE001 - metadata recording is best effort
+            logger.debug("Could not record embedding metadata: %s", exc)
 
     # ------------------------------------------------------------------
     # Indexing
@@ -94,6 +210,7 @@ class RAGStore:
         chunks: list[Any],  # list[CodeChunk]
         embed_fn: Any,  # callable: list[str] -> list[list[float]]
         *,
+        embedding_model: str = "",
         batch_size: int = 64,
     ) -> int:
         """
@@ -102,20 +219,26 @@ class RAGStore:
         Args:
             chunks: List of CodeChunk objects (from repo_indexer).
             embed_fn: Function that takes list[str] and returns list[list[float]].
+            embedding_model: Embedding model name, recorded on the collection so a
+                later run can detect that the index must be rebuilt (plan.md Phase 4).
             batch_size: Number of chunks to embed per batch.
 
         Returns:
             Number of chunks indexed.
         """
         if self._collection is None:
-            self.initialize()
+            self.initialize(embedding_model=embedding_model)
         if self._collection is None:
             return 0
 
         if not chunks:
             return 0
 
+        if embedding_model:
+            self.ensure_embedding_compatibility(embedding_model=embedding_model)
+
         total = 0
+        dimensions_recorded = False
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i : i + batch_size]
             documents = [c.to_document() for c in batch]
@@ -131,6 +254,20 @@ class RAGStore:
             ]
 
             embeddings = embed_fn(documents)
+
+            # Verify the true embedding dimension before the first write: an index
+            # built for another dimension must be rebuilt, never appended to.
+            if not dimensions_recorded and embeddings:
+                dimensions = len(embeddings[0])
+                self.ensure_embedding_compatibility(
+                    embedding_model=embedding_model,
+                    embedding_dimensions=dimensions,
+                )
+                self._record_embedding_metadata(
+                    embedding_model=embedding_model,
+                    embedding_dimensions=dimensions,
+                )
+                dimensions_recorded = True
 
             # Re-indexing an unchanged repository is expected.  Upsert keeps
             # stable chunk IDs from causing a duplicate-ID failure.

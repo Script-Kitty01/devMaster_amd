@@ -6,8 +6,9 @@ Based on the conversation summary, we have completed locally actionable phases 0
 
 - Baseline and freezing of current state
 - Environment configuration and diagnostics
+- Verified runtime detection + embedding signature guard
 - UI fixes and path corrections
-- All 11 tests passing
+- All 19 unit tests + 7 harness checks passing
 - Full implementation of locally actionable portions
 
 ## Next Phase: Remote ROCm Host Verification and Build

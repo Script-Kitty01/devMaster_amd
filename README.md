@@ -40,8 +40,10 @@ We have completed locally actionable phases 0-5 of the ROCm migration plan:
 
 - Baseline and freezing of current state
 - Environment configuration and diagnostics
-- UI fixes and path corrections
-- All 11 tests passing
+- Verified llama.cpp runtime detection (ROCm claims require HIP evidence)
+- Embedding signature guard for the Chroma index
+- UI fixes, path corrections, and a shared truthful status line
+- All 19 unit tests + 7 harness checks passing
 - Full implementation of locally actionable portions
 
 ### Next Steps: Remote ROCm Host Verification and Build

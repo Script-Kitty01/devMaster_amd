@@ -19,6 +19,43 @@ class TaskWorkflowContractTests(unittest.TestCase):
         self.assertTrue(intake["approval_required"])
         self.assertEqual(workflow._route_after_approval({"approved": False}), "report")
 
+    def test_task_plan_and_risk_are_created(self):
+        workflow = object.__new__(TaskWorkflow)
+        workflow.auto_approve = False
+        workflow.tool_registry = Mock()
+        workflow.tool_registry.invoke.return_value = Mock(success=True, summary="ok", details=[{"total_files": 2}], elapsed_ms=10)
+        state = {
+            "task_text": "Fix the auth bug in the login flow",
+            "task_brief": {"intent": "change"},
+            "diagnoses": [{"summary": "Broken session validation", "root_cause_file": "auth.py", "proposed_change": "Validate token before session use"}],
+            "evidence": [],
+            "selected_profiles": ["security"],
+        }
+
+        result = workflow._node_plan(state)
+        self.assertIn("task_plan", result)
+        self.assertEqual(result["risk_level"], "medium")
+        self.assertTrue(result["verification_required"])
+        self.assertTrue(result["task_plan"]) 
+
+    def test_failed_verification_blocks_completion(self):
+        workflow = object.__new__(TaskWorkflow)
+        state = {
+            "task_brief": {"task_id": "task-1", "intent": "change"},
+            "review_verdict": "approve",
+            "verification_results": [{"name": "pytest", "status": "failed", "exit_code": 1, "summary": "test failed"}],
+            "approval_required": True,
+            "approved": True,
+            "task_text": "Fix auth issue",
+            "patch_proposal": {"summary": "patch", "risk_level": "medium", "unified_diff": "diff", "files_changed": ["auth.py"]},
+            "findings": [],
+            "evidence": [],
+            "diagnoses": [],
+        }
+        result = workflow._node_report(state)
+        self.assertIn("verification_status", result["report"].lower())
+        self.assertIn("blocked", result["report"].lower())
+
     def test_review_rejects_patch_without_evidence(self):
         agent = ReviewAgent(llm=Mock())
         patch = PatchProposal(

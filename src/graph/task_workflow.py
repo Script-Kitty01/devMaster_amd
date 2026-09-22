@@ -32,6 +32,7 @@ from src.models.artifacts import (
     Evidence,
     PatchProposal,
     ReviewVerdict,
+    RiskLevel,
     TaskBrief,
     VerificationResult,
     downgrade_finding_without_evidence,
@@ -47,6 +48,69 @@ from src.tools.intelligence_tools import register_intelligence_tools
 from src.tools.tool_registry import ToolRegistry, ToolResult
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Deterministic gates (plan-updrage.md §3 "Deterministic gates")
+# ---------------------------------------------------------------------------
+
+_SECURITY_PROFILES = {"security", "security_reviewer"}
+
+
+def assess_risk_level(
+    *,
+    intent: str,
+    diagnoses: Optional[list[dict[str, Any]]] = None,
+    patch_proposal: Optional[PatchProposal] = None,
+    selected_profiles: Optional[list[str]] = None,
+) -> RiskLevel:
+    """Classify task risk deterministically (never from LLM prose).
+
+    Precedence:
+    1. An explicit patch-proposal risk level wins (validated upstream).
+    2. A patch touching three or more files, or three or more diagnoses, is high.
+    3. Any `change` task is at least medium because it mutates the repository.
+    4. Security-scoped or diagnosis-carrying review/diagnose tasks are medium.
+    5. Everything else is low.
+    """
+    if patch_proposal:
+        proposed = patch_proposal.get("risk_level")
+        if proposed in ("low", "medium", "high"):
+            return proposed
+        if len(patch_proposal.get("files_changed") or []) >= 3:
+            return "high"
+
+    if len(diagnoses or []) >= 3:
+        return "high"
+
+    if intent == "change":
+        return "medium"
+
+    if diagnoses or (_SECURITY_PROFILES & set(selected_profiles or [])):
+        return "medium"
+
+    return "low"
+
+
+def derive_verification_status(
+    verification_results: Optional[list[dict[str, Any]]] = None,
+    verdict: Optional[str] = None,
+) -> str:
+    """Reduce verification results to the single completion gate status.
+
+    A failed or blocked mandatory check always blocks completion; an LLM
+    verdict of ``approve`` never overrides a failing command.  Returns one of
+    ``passed``, ``blocked``, ``skipped`` or ``not_run``.
+    """
+    statuses = [(r or {}).get("status") for r in (verification_results or [])]
+    if any(s in ("failed", "blocked") for s in statuses):
+        return "blocked"
+    if verdict in ("reject", "request_revision"):
+        return "blocked"
+    if any(s == "passed" for s in statuses):
+        return "passed"
+    if statuses:
+        return "skipped"
+    return "not_run"
 
 
 class TaskWorkflow:
@@ -363,6 +427,7 @@ class TaskWorkflow:
         intent = brief.get("intent", "review")
         diagnoses = state.get("diagnoses", [])
         evidence = state.get("evidence", [])
+        selected_profiles = state.get("selected_profiles", [])
 
         # Formulate implementation plan text
         if diagnoses:
@@ -375,20 +440,37 @@ class TaskWorkflow:
         else:
             plan_text = f"Review/investigation plan for: {task_text}"
 
+        # Only a change task proposes a patch, and only when the Implementation
+        # agent is attached to this workflow instance (read-only runs have none).
         patch_prop: Optional[PatchProposal] = None
-        if intent == "change":
-            patch_prop = self.implementation.propose_patch(
+        implementation_agent = getattr(self, "implementation", None)
+        if intent == "change" and implementation_agent is not None:
+            patch_prop = implementation_agent.propose_patch(
                 task_text=task_text,
                 diagnoses=diagnoses,
                 evidence=evidence,
                 implementation_plan=plan_text,
             )
 
+        risk_level = assess_risk_level(
+            intent=intent,
+            diagnoses=diagnoses,
+            patch_proposal=patch_prop,
+            selected_profiles=selected_profiles,
+        )
+        verification_required = risk_level in ("medium", "high")
+
         return {
+            "task_plan": plan_text,
             "implementation_plan": plan_text,
             "patch_proposal": patch_prop,
+            "risk_level": risk_level,
+            "verification_required": verification_required,
             "phase": "approval" if intent == "change" else "report",
-            "phase_detail": "Plan and proposal generated.",
+            "phase_detail": (
+                f"Plan and proposal generated (risk: {risk_level}); "
+                f"verification {'required' if verification_required else 'not required'} before completion."
+            ),
         }
 
     def _node_approval(self, state: TaskState) -> dict[str, Any]:
@@ -522,6 +604,11 @@ class TaskWorkflow:
         patch_prop = state.get("patch_proposal")
         worktree_branch = state.get("worktree_branch", "None")
 
+        # Deterministic completion gate: failing checks always block completion.
+        verification_status = derive_verification_status(verification, verdict)
+        risk_level = state.get("risk_level", "low")
+        verification_required = bool(state.get("verification_required", False))
+
         report_lines = [
             f"# Kutaar Task Execution Report\n",
             f"**Task ID:** `{brief.get('task_id', 'N/A')}` | **Intent:** `{brief.get('intent', 'N/A')}` | **Verdict:** `{verdict}`\n",
@@ -534,7 +621,23 @@ class TaskWorkflow:
         report_lines.append(f"- **Current Phase:** `{state.get('phase', 'done')}`")
         report_lines.append(f"- **Detail:** {state.get('phase_detail', '')}")
         report_lines.append(f"- **Isolated Worktree Branch:** `{worktree_branch}`")
+        report_lines.append(f"- **Risk Level:** `{risk_level}`")
+        report_lines.append(
+            f"- **Verification Required:** {'yes' if verification_required else 'no'}"
+        )
         report_lines.append(f"- **Retries Used:** {state.get('retry_count', 0)} / {state.get('max_retries', 2)}\n")
+
+        # 1b. Completion gate — a failing mandatory check always blocks completion.
+        report_lines.append("### Verification Gate\n")
+        report_lines.append(f"- **Verification Status:** `{verification_status}`")
+        if verification_status == "blocked":
+            report_lines.append(
+                "- **Blocked:** mandatory checks did not pass, so the change is not accepted. "
+                "Completion is blocked until verification passes or the task is revised."
+            )
+        elif verification_status == "not_run":
+            report_lines.append("- No verification command has been executed for this task.")
+        report_lines.append("")
 
         # 2. Diagnoses & Findings
         report_lines.append(f"### Findings & Diagnoses ({len(findings)} findings, {len(diagnoses)} diagnoses)\n")
@@ -589,14 +692,31 @@ class TaskWorkflow:
             report_lines.append("### Approval Required\n")
             report_lines.append("The proposal has not been applied. Approve it in the workspace before implementation.")
 
+        # Machine-readable summary so the UI, exported reports, and tests can read
+        # the gate result without parsing prose.
+        report_lines.append("### Run Metadata\n")
+        report_lines.append("```yaml")
+        report_lines.append(f"task_id: {brief.get('task_id', 'N/A')}")
+        report_lines.append(f"intent: {brief.get('intent', 'N/A')}")
+        report_lines.append(f"risk_level: {risk_level}")
+        report_lines.append(f"verification_required: {str(verification_required).lower()}")
+        report_lines.append(f"verification_status: {verification_status}")
+        report_lines.append(f"review_verdict: {verdict}")
+        report_lines.append("```")
+
         final_report = "\n".join(report_lines)
 
         return {
             "report": final_report,
-            "phase": "report",
+            "verification_status": verification_status,
+            "phase": "blocked" if verification_status == "blocked" else "report",
             "phase_detail": (
-                "Awaiting explicit approval before implementation."
-                if state.get("approval_required") and not state.get("approved")
-                else "Task execution completed successfully."
+                "Completion blocked: mandatory verification checks did not pass."
+                if verification_status == "blocked"
+                else (
+                    "Awaiting explicit approval before implementation."
+                    if state.get("approval_required") and not state.get("approved")
+                    else "Task execution completed successfully."
+                )
             ),
         }

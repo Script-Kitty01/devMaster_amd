@@ -21,6 +21,25 @@ class FakeCollection:
         }
 
 
+class FakeEmbeddingCollection(FakeCollection):
+    """Stand-in Chroma collection with metadata and upsert support."""
+
+    def __init__(self, metadata=None):
+        super().__init__()
+        self.metadata = dict(metadata or {})
+        self.upserts = []
+
+    def count(self):
+        return len(self.upserts)
+
+    def modify(self, **kwargs):
+        if "metadata" in kwargs:
+            self.metadata = dict(kwargs["metadata"])
+
+    def upsert(self, **kwargs):
+        self.upserts.append(kwargs)
+
+
 class CoreRegressionTests(unittest.TestCase):
     def test_chunker_does_not_emit_a_wholly_overlapping_final_chunk(self):
         source = Path(__file__)
@@ -28,6 +47,67 @@ class CoreRegressionTests(unittest.TestCase):
         chunks = RepoIndexer(source.parent.parent, chunk_size=30, chunk_overlap=10).chunk_file(source)
         self.assertEqual(chunks[-1].end_line, line_count)
         self.assertTrue(all(a.end_line < b.end_line for a, b in zip(chunks, chunks[1:])))
+
+    def test_rag_rebuilds_index_when_embedding_dimension_changes(self):
+        """plan.md Phase 4: a different embedding dimension must not reuse the index."""
+        store = RAGStore()
+        store._collection = FakeEmbeddingCollection(
+            {
+                "hnsw:space": "cosine",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "embedding_dimensions": 384,
+            }
+        )
+        store._indexed_count = 5
+
+        with patch.object(RAGStore, "reset") as reset:
+            rebuilt = store.ensure_embedding_compatibility(embedding_dimensions=768)
+
+        self.assertTrue(rebuilt)
+        reset.assert_called_once()
+
+    def test_rag_reuses_index_for_a_matching_embedding_signature(self):
+        store = RAGStore()
+        store._collection = FakeEmbeddingCollection(
+            {
+                "hnsw:space": "cosine",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "embedding_dimensions": 384,
+            }
+        )
+
+        with patch.object(RAGStore, "reset") as reset:
+            rebuilt = store.ensure_embedding_compatibility(
+                embedding_model="all-MiniLM-L6-v2",
+                embedding_dimensions=384,
+            )
+
+        self.assertFalse(rebuilt)
+        reset.assert_not_called()
+
+    def test_rag_records_embedding_signature_while_indexing(self):
+        from src.ingestion.repo_indexer import CodeChunk
+
+        store = RAGStore()
+        store._collection = FakeEmbeddingCollection()
+        chunk = CodeChunk(
+            file_path="app.py",
+            language="python",
+            start_line=1,
+            end_line=2,
+            content="print('hi')",
+        )
+
+        indexed = store.index_chunks(
+            [chunk],
+            lambda documents: [[0.0] * 384 for _ in documents],
+            embedding_model="all-MiniLM-L6-v2",
+        )
+
+        self.assertEqual(indexed, 1)
+        self.assertEqual(store._collection.metadata.get("embedding_model"), "all-MiniLM-L6-v2")
+        self.assertEqual(store._collection.metadata.get("embedding_dimensions"), 384)
+        self.assertEqual(store.embedding_signature()["embedding_dimensions"], 384)
 
     def test_rag_combines_language_and_file_filters(self):
         store = RAGStore()

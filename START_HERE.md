@@ -11,11 +11,11 @@
 | Metric          | Result                           |
 | --------------- | -------------------------------- |
 | Phases Complete | 0, 3-5 (all local work)          |
-| Tests Passing   | 11/11 ✅                         |
+| Tests Passing   | 19/19 unit + 7/7 harness ✅      |
 | Errors          | 0                                |
-| Documentation   | 8 guides, 1,785 lines            |
-| Git Commits     | 6 checkpoints                    |
-| Code Quality    | Perfect                          |
+| Documentation   | 16 guides at repo root           |
+| Git Commits     | 16 (branch `upgrade`)            |
+| Code Quality    | Verified runtime detection added |
 | Time Estimate   | ~4 hours local, 45-60 min remote |
 
 ---
@@ -42,10 +42,13 @@
 ### Code (Ready to Use)
 
 ```
-✅ src/llm/rocm_service.py       - Backend selection
+✅ src/llm/rocm_service.py       - Backend selection + verified runtime detection
+✅ src/rag/chroma_store.py       - Embedding signature guard (auto rebuild)
 ✅ src/ui/gradio_app.py          - Web UI (updated)
 ✅ src/ui/chat_app.py            - CLI UI (updated)
-✅ tests/test_backend_selection.py - 4 new tests
+✅ tests/test_backend_selection.py - 7 backend tests
+✅ tests/test_core_regressions.py  - 7 regression tests
+✅ tests/test_task_workflow.py     - 5 workflow tests
 ✅ scripts/baseline.ps1          - Baseline capture
 ✅ scripts/verify_rocm_host.py   - Phase 1 verification
 ✅ scripts/build_llama_cpp_hip.sh - Phase 2 build
@@ -82,10 +85,14 @@ ea6c93a Add implementation checklist: All items complete ✅
 ### What Was Built
 
 - **Explicit backend selection** via environment variables (KUTAAR\_\*)
-- **Truthful diagnostics** showing actual vs requested backend
+- **Truthful diagnostics** (17 fields) showing actual vs requested backend
+- **Verified runtime detection**: the backend claim must be backed by the ggml
+  library actually installed — ROCm is never reported without HIP evidence
 - **Embedding device visibility** (GPU vs CPU tracking)
-- **Both UIs updated** (Gradio and Streamlit)
-- **4 new tests** validating backend selection
+- **Embedding signature guard**: the Chroma index rebuilds when the embedding
+  model or dimension changes
+- **Both UIs updated** (Gradio and Streamlit share one status source)
+- **19 unit tests + 7 harness checks** validating all of the above
 - **Baseline captured** (6.06s Ollama latency, 184 packages)
 
 ### What Works Now
