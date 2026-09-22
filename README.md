@@ -12,14 +12,14 @@ Kutaar is a conversational assistant that analyzes your codebase through a team 
 
 ### Agent Team
 
-| Agent | Role | Tools |
-|---|---|---|
-| 🧠 **Planner** | Orchestrates analysis, decomposes queries | — |
-| 🔒 **Security** | Finds vulnerabilities (OWASP, CWE, secrets) | Bandit, Semgrep |
-| ⚡ **Performance** | Spots bottlenecks & optimization opportunities | Code search |
-| 🏗️ **Architecture** | Evaluates design patterns & modularity | Git analyzer |
-| 🚀 **DevOps** | Checks containerization & deployment readiness | Dockerfile validator |
-| ⚖️ **Consensus** | Cross-review debate & final verdict | — |
+| Agent               | Role                                           | Tools                |
+| ------------------- | ---------------------------------------------- | -------------------- |
+| 🧠 **Planner**      | Orchestrates analysis, decomposes queries      | —                    |
+| 🔒 **Security**     | Finds vulnerabilities (OWASP, CWE, secrets)    | Bandit, Semgrep      |
+| ⚡ **Performance**  | Spots bottlenecks & optimization opportunities | Code search          |
+| 🏗️ **Architecture** | Evaluates design patterns & modularity         | Git analyzer         |
+| 🚀 **DevOps**       | Checks containerization & deployment readiness | Dockerfile validator |
+| ⚖️ **Consensus**    | Cross-review debate & final verdict            | —                    |
 
 ### Key Features
 
@@ -29,6 +29,43 @@ Kutaar is a conversational assistant that analyzes your codebase through a team 
 - **Multi-agent collaboration** — 5 specialist agents + Consensus with cross-review debate
 - **100% local** — all inference runs on your AMD Radeon GPU, no cloud required
 - **Bonus** — Radeon Cloud API comparison with quantization/distillation benchmarks
+
+---
+
+## ROCm Migration Status
+
+### Current State
+
+We have completed locally actionable phases 0-5 of the ROCm migration plan:
+
+- Baseline and freezing of current state
+- Environment configuration and diagnostics
+- Verified llama.cpp runtime detection (ROCm claims require HIP evidence)
+- Embedding signature guard for the Chroma index
+- UI fixes, path corrections, and a shared truthful status line
+- All 19 unit tests + 7 harness checks passing
+- Full implementation of locally actionable portions
+
+### Next Steps: Remote ROCm Host Verification and Build
+
+Following phases 6 and beyond from the migration plan, we need to:
+
+1. Verify the remote ROCm host (u-14073-bcd85560)
+2. Build HIP-enabled llama-cpp-python with GGML_HIP=ON
+3. Validate the build and integration
+
+### Available Scripts
+
+- `scripts/verify_rocm_host.py` - Verifies ROCm host compatibility
+- `scripts/build_llama_cpp_hip.sh` - Builds llama-cpp-python with HIP support
+- `scripts/run_remote_hip_build.py` - Drives remote execution of verification and build
+
+### Remote Execution Setup
+
+To execute on the remote ROCm host, ensure the following environment variables are set:
+
+- `ANRUI_BASE` = "https://radeon-global.anruicloud.com/instances/u-14073-bcd85560"
+- `ANRUI_TOKEN` = "amd-oneclick" (or actual token)
 
 ---
 
@@ -52,13 +89,13 @@ Kutaar is a conversational assistant that analyzes your codebase through a team 
 
 ### GPU Performance (AMD Radeon gfx1100 · ROCm 7.2.1)
 
-| Metric | Value |
-|---|---|
-| **Token Generation** | **124 tok/s** |
-| **Prompt Evaluation** | 17.4 tok/s |
-| **Model Load Time** | 575 ms |
-| **VRAM Usage** | 2.57 GB / 51 GB |
-| **ROCm Compute Buffer** | 256.5 MiB |
+| Metric                  | Value           |
+| ----------------------- | --------------- |
+| **Token Generation**    | **124 tok/s**   |
+| **Prompt Evaluation**   | 17.4 tok/s      |
+| **Model Load Time**     | 575 ms          |
+| **VRAM Usage**          | 2.57 GB / 51 GB |
+| **ROCm Compute Buffer** | 256.5 MiB       |
 
 **Optimizations:** Q4_K_M quantization · Full GPU offloading (28 layers) · CUDA Graphs · MFMA instructions · Batched inference (n_batch=512)
 
@@ -70,13 +107,13 @@ Kutaar is a conversational assistant that analyzes your codebase through a team 
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| **GPU** | AMD Radeon GPU with ROCm installed (tested on gfx1100 / ROCm 7.2.1) |
-| **Python** | 3.10 or newer |
-| **llama-cpp-python** | Built with HIP/ROCm backend (`GGML_HIP=ON`) |
-| **GGUF Model** | A quantized GGUF model (e.g. Llama 3.2 3B Instruct Q4_K_M) |
-| **Disk** | ~5 GB for model + dependencies |
+| Requirement          | Details                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| **GPU**              | AMD Radeon GPU with ROCm installed (tested on gfx1100 / ROCm 7.2.1) |
+| **Python**           | 3.10 or newer                                                       |
+| **llama-cpp-python** | Built with HIP/ROCm backend (`GGML_HIP=ON`)                         |
+| **GGUF Model**       | A quantized GGUF model (e.g. Llama 3.2 3B Instruct Q4_K_M)          |
+| **Disk**             | ~5 GB for model + dependencies                                      |
 
 ---
 
@@ -92,12 +129,14 @@ cd devmaster
 ### Step 2 — Create a virtual environment
 
 **Windows (PowerShell):**
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
 **Linux:**
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -133,10 +172,38 @@ mkdir -p models
 
 You can use any GGUF model. Update the path via `--model-path` if using a different model.
 
-### Step 6 — Launch the UI
+### Step 6 — Launch the local UI
+
+```bash
+python src/ui/gradio_app.py
+```
+
+The Gradio UI opens at `http://localhost:7860` and is the recommended local
+launcher. The original Streamlit UI remains available if needed:
 
 ```bash
 streamlit run src/ui/chat_app.py
+```
+
+#### Backend selection
+
+Kutaar can use either **Ollama** (default, easy to install) or a local
+**llama-cpp-python** build for ROCm/HIP GPU inference. Set these _before_
+launching the UI:
+
+```bash
+# Option A: Ollama (default)
+export KUTAAR_LLM_BACKEND=ollama
+export KUTAAR_MODEL=gemma2:2b
+export KUTAAR_OLLAMA_URL=http://127.0.0.1:11434
+python src/ui/gradio_app.py
+
+# Option B: llama-cpp-python with ROCm/HIP on Linux
+export KUTAAR_LLM_BACKEND=llama_cpp
+export KUTAAR_MODEL=/path/to/model.gguf
+export KUTAAR_GPU_LAYERS=-1
+export KUTAAR_ALLOW_CPU_FALLBACK=1
+python src/ui/gradio_app.py
 ```
 
 Or use the main entry point:
@@ -152,9 +219,9 @@ The Streamlit UI opens at `http://localhost:8501`.
 1. In the sidebar, enter a repository path (e.g. `demo_repos/sample_app`)
 2. Click **Index Repo** to chunk and embed the codebase
 3. Type a question in the chat, for example:
-   - *"Find all security vulnerabilities in this codebase"*
-   - *"What performance bottlenecks exist?"*
-   - *"Evaluate the architecture and suggest improvements"*
+   - _"Find all security vulnerabilities in this codebase"_
+   - _"What performance bottlenecks exist?"_
+   - _"Evaluate the architecture and suggest improvements"_
 4. Watch the agents analyze, debate, and produce a consensus verdict
 
 ### Step 8 (Optional) — Run benchmarks
@@ -211,27 +278,27 @@ devmaster/
 
 ## CLI Reference
 
-| Command | Description |
-|---|---|
-| `streamlit run src/ui/chat_app.py` | Launch the chat UI |
-| `python -m src.main` | Launch via main entry point |
-| `python -m src.main --benchmark` | Run GPU benchmark suite |
-| `python -m src.main --model-path <path>` | Use a custom GGUF model |
-| `python -m src.main --cloud-api-url <url> --cloud-api-key <key>` | Enable cloud comparison |
-| `python -m src.main --log-level DEBUG` | Enable verbose logging |
+| Command                                                          | Description                 |
+| ---------------------------------------------------------------- | --------------------------- |
+| `streamlit run src/ui/chat_app.py`                               | Launch the chat UI          |
+| `python -m src.main`                                             | Launch via main entry point |
+| `python -m src.main --benchmark`                                 | Run GPU benchmark suite     |
+| `python -m src.main --model-path <path>`                         | Use a custom GGUF model     |
+| `python -m src.main --cloud-api-url <url> --cloud-api-key <key>` | Enable cloud comparison     |
+| `python -m src.main --log-level DEBUG`                           | Enable verbose logging      |
 
 ---
 
 ## Scoring Alignment (Track 2)
 
-| Criteria | Points | Implementation |
-|---|---|---|
-| Task positioning + creative scenarios | 20 | "Your private AI engineering team on AMD Radeon" — 5 specialist agents |
-| Task decomposition, tools, RAG, memory | 20 | Planner decomposes; Bandit/Semgrep/Git tools; ChromaDB RAG; LangGraph memory |
-| Smooth multi-turn interaction | 20 | Streamlit chat UI with context-aware follow-ups |
-| Core inference on AMD Radeon GPU | 20 | llama-cpp-python + HIP backend; sentence-transformers on GPU |
-| Inference speed optimization | 20 | Batched inference, Q4 quantization, benchmark comparison table |
-| **Bonus:** Radeon cloud API + quantization | 20 | Cloud API client with quantized/distilled model comparison |
+| Criteria                                   | Points | Implementation                                                               |
+| ------------------------------------------ | ------ | ---------------------------------------------------------------------------- |
+| Task positioning + creative scenarios      | 20     | "Your private AI engineering team on AMD Radeon" — 5 specialist agents       |
+| Task decomposition, tools, RAG, memory     | 20     | Planner decomposes; Bandit/Semgrep/Git tools; ChromaDB RAG; LangGraph memory |
+| Smooth multi-turn interaction              | 20     | Streamlit chat UI with context-aware follow-ups                              |
+| Core inference on AMD Radeon GPU           | 20     | llama-cpp-python + HIP backend; sentence-transformers on GPU                 |
+| Inference speed optimization               | 20     | Batched inference, Q4 quantization, benchmark comparison table               |
+| **Bonus:** Radeon cloud API + quantization | 20     | Cloud API client with quantized/distilled model comparison                   |
 
 ---
 

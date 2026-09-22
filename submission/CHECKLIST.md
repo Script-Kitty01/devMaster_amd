@@ -4,12 +4,12 @@
 
 ### Required Deliverables
 
-| # | Item | Status | File/Location |
-|---|------|--------|---------------|
-| 1 | **Project Spec Document (PDF)** | ✅ Markdown ready | `PROJECT_SPEC.md` → convert to PDF |
-| 2 | **Source Code** | ✅ On GitHub | `Script-Kitty01/devMaster_amd` |
-| 3 | **Demo Video (3-5 min)** | ✅ Recorded | https://drive.google.com/drive/folders/1PHfQT8CkQi6C3Jq6fY6C_3cnXVxyGfLl |
-| 4 | **Supplementary (PPT/Poster)** | ✅ Outline ready | `submission/PPT_OUTLINE.md` → create PPT |
+| #   | Item                            | Status            | File/Location                                                            |
+| --- | ------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| 1   | **Project Spec Document (PDF)** | ✅ Markdown ready | `PROJECT_SPEC.md` → convert to PDF                                       |
+| 2   | **Source Code**                 | ✅ On GitHub      | `Script-Kitty01/devMaster_amd`                                           |
+| 3   | **Demo Video (3-5 min)**        | ✅ Recorded       | https://drive.google.com/drive/folders/1PHfQT8CkQi6C3Jq6fY6C_3cnXVxyGfLl |
+| 4   | **Supplementary (PPT/Poster)**  | ✅ Outline ready  | `submission/PPT_OUTLINE.md` → create PPT                                 |
 
 ### Submission Steps
 

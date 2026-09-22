@@ -8,12 +8,12 @@
 
 ## Deliverables
 
-| # | Item | Link |
-|---|---|---|
-| 1 | **Project Spec (PDF)** | [`PROJECT_SPEC.pdf`](./PROJECT_SPEC.pdf) |
-| 2 | **Source Code** | https://github.com/Script-Kitty01/devMaster_amd |
-| 3 | **Demo Video** | https://drive.google.com/drive/folders/1PHfQT8CkQi6C3Jq6fY6C_3cnXVxyGfLl |
-| 4 | **PPT** | [`Kutaar_PPT.pptx`](./Kutaar_PPT.pptx) |
+| #   | Item                   | Link                                                                     |
+| --- | ---------------------- | ------------------------------------------------------------------------ |
+| 1   | **Project Spec (PDF)** | [`PROJECT_SPEC.pdf`](./PROJECT_SPEC.pdf)                                 |
+| 2   | **Source Code**        | https://github.com/Script-Kitty01/devMaster_amd                          |
+| 3   | **Demo Video**         | https://drive.google.com/drive/folders/1PHfQT8CkQi6C3Jq6fY6C_3cnXVxyGfLl |
+| 4   | **PPT**                | [`Kutaar_PPT.pptx`](./Kutaar_PPT.pptx)                                   |
 
 ---
 
@@ -23,14 +23,14 @@ Kutaar is a conversational multi-agent AI engineering assistant that analyzes co
 
 ### Agent Team
 
-| Agent | Role | Tools |
-|---|---|---|
-| 🧠 Planner | Orchestrates analysis, decomposes queries | — |
-| 🔒 Security | Finds vulnerabilities (OWASP, CWE, secrets) | Bandit, Semgrep |
-| ⚡ Performance | Spots bottlenecks & optimization | Code search |
-| 🏗️ Architecture | Evaluates design patterns & modularity | Git analyzer |
-| 🚀 DevOps | Checks containerization & deployment | Dockerfile validator |
-| ⚖️ Consensus | Cross-review debate & final verdict | — |
+| Agent           | Role                                        | Tools                |
+| --------------- | ------------------------------------------- | -------------------- |
+| 🧠 Planner      | Orchestrates analysis, decomposes queries   | —                    |
+| 🔒 Security     | Finds vulnerabilities (OWASP, CWE, secrets) | Bandit, Semgrep      |
+| ⚡ Performance  | Spots bottlenecks & optimization            | Code search          |
+| 🏗️ Architecture | Evaluates design patterns & modularity      | Git analyzer         |
+| 🚀 DevOps       | Checks containerization & deployment        | Dockerfile validator |
+| ⚖️ Consensus    | Cross-review debate & final verdict         | —                    |
 
 ### Tech Stack
 
@@ -42,12 +42,12 @@ Kutaar is a conversational multi-agent AI engineering assistant that analyzes co
 
 ### GPU Performance
 
-| Metric | Value |
-|---|---|
-| Token Generation | 124 tok/s |
-| Prompt Evaluation | 17.4 tok/s |
-| Model Load Time | 575 ms |
-| VRAM Usage | 2.57 GB / 51 GB |
+| Metric            | Value           |
+| ----------------- | --------------- |
+| Token Generation  | 124 tok/s       |
+| Prompt Evaluation | 17.4 tok/s      |
+| Model Load Time   | 575 ms          |
+| VRAM Usage        | 2.57 GB / 51 GB |
 
 ---
 

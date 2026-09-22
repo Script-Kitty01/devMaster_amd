@@ -5,11 +5,16 @@ Uses HTTP polling (not WebSockets) for proxy compatibility.
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 import gradio as gr
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +58,30 @@ def _init_components(repo_path: str):
         _tool_registry = ToolRegistry(repo_path)
 
 
+def model_status() -> str:
+    """Initialize the local llama model and return a user-visible status."""
+    global _llm
+    try:
+        from src.llm.rocm_service import ROCmLLM
+
+        if _llm is None:
+            _llm = ROCmLLM.get_instance()
+        loaded = _llm.initialize()
+        diag = _llm.diagnostics()
+        if loaded and _llm.is_ready:
+            verification = "verified" if diag["backend_verified"] else "UNVERIFIED"
+            return (
+                f"✅ LLM ready — `{Path(_llm.config.model_path).name}` on **{_llm.backend.upper()}** "
+                f"({verification}; requested: {diag['configured_backend']})\n\n"
+                f"`{_llm.status_line()}`"
+            )
+        reason = diag["fallback_reason"] or "model not loaded"
+        return f"⚠️ LLM unavailable — {reason}"
+    except Exception as exc:
+        logger.exception("LLM initialization error")
+        return f"❌ LLM initialization failed: `{exc}`"
+
+
 def _index_repo(repo_path: str) -> str:
     global _repo_indexed, _rag_store, _llm
     if not repo_path or not Path(repo_path).exists():
@@ -67,8 +96,12 @@ def _index_repo(repo_path: str) -> str:
         if not chunks:
             return "⚠️ No code files found."
 
-        _rag_store.reset()
-        count = _rag_store.index_chunks(chunks, _llm.embed)
+        _rag_store.reset(embedding_model=_llm.config.embedding_model)
+        count = _rag_store.index_chunks(
+            chunks,
+            _llm.embed,
+            embedding_model=_llm.config.embedding_model,
+        )
         _repo_indexed = True
         stats = indexer.stats()
         return f"✅ Indexed {count} chunks from {stats['file_count']} files in `{Path(repo_path).name}`"
@@ -152,6 +185,9 @@ def chat_fn(message: str, history: list[dict], repo_path: str) -> tuple[str, lis
             last_msg = messages[-1]
             response_text = last_msg.content if hasattr(last_msg, "content") else str(last_msg)
 
+        if not response_text.strip():
+            response_text = "The workflow completed without a response. Check the LLM service logs and try again."
+
         # Collect findings
         findings = []
         for agent_key in ["security", "performance", "architecture", "devops"]:
@@ -206,12 +242,14 @@ with gr.Blocks(title="Kutaar — AMD ROCm Engineering Assistant") as demo:
             repo_input = gr.Textbox(
                 label="📂 Repository Path",
                 placeholder="/workspace/demo_repos/sample_app",
-                value="/workspace/demo_repos/sample_app",
+                value=str(PROJECT_ROOT / "demo_repos" / "fastapi_service"),
             )
             with gr.Row():
                 index_btn = gr.Button("🔍 Index Repo", size="sm")
+                model_btn = gr.Button("🧠 Initialize LLM", size="sm")
                 clear_btn = gr.Button("🗑️ Clear Chat", size="sm")
             index_status = gr.Markdown("")
+            model_status_view = gr.Markdown(model_status())
 
             gr.Markdown("""---
             ### 🧠 Agents
@@ -236,6 +274,7 @@ with gr.Blocks(title="Kutaar — AMD ROCm Engineering Assistant") as demo:
     # Events
     msg_input.submit(chat_fn, [msg_input, chatbot, repo_input], [msg_input, chatbot])
     index_btn.click(index_handler, [repo_input], [index_status])
+    model_btn.click(model_status, [], [model_status_view])
     clear_btn.click(clear_handler, [], [chatbot, index_status])
 
 if __name__ == "__main__":
