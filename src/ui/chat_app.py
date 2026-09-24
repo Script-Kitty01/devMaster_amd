@@ -69,6 +69,11 @@ def init_session() -> None:
         "selected_profiles": ["investigator", "security_reviewer", "review"],
         "task_intent": "Review",
         "pending_approval": False,
+        "constraint_readonly": False,
+        "constraint_no_install": False,
+        "constraint_no_net": False,
+        "constraint_no_service_start": False,
+        "finding_status_filter": "all",
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -138,6 +143,14 @@ def render_sidebar() -> None:
             )
             st.session_state.selected_profiles = selected
             st.caption("Change tasks pause before worktree mutation for approval.")
+            st.caption("Constraints (intake; service start is blocked when set)")
+            cc1, cc2 = st.columns(2)
+            with cc1:
+                st.checkbox("Read-only", key="constraint_readonly")
+                st.checkbox("No install", key="constraint_no_install")
+            with cc2:
+                st.checkbox("No network", key="constraint_no_net")
+                st.checkbox("No service start", key="constraint_no_service_start")
 
         st.divider()
 
@@ -374,6 +387,19 @@ def _run_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
     return response_text, findings, tool_logs
 
 
+def _active_constraints() -> list[str]:
+    out: list[str] = []
+    if st.session_state.get("constraint_readonly"):
+        out.append("readonly")
+    if st.session_state.get("constraint_no_install"):
+        out.append("no-install")
+    if st.session_state.get("constraint_no_net"):
+        out.append("no-net")
+    if st.session_state.get("constraint_no_service_start"):
+        out.append("no-service-start")
+    return out
+
+
 def _run_task_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
     """Run the evidence-driven task graph and render its state as chat output."""
     if st.session_state.task_workflow is None:
@@ -387,6 +413,7 @@ def _run_task_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
         initial_task_state(
             repo_path=st.session_state.repo_path,
             task_text=prompt,
+            task_constraints=_active_constraints(),
         ) | {"selected_profiles": st.session_state.selected_profiles},
     )
     st.session_state.task_state = result
@@ -421,10 +448,13 @@ def _run_task_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
 
     if result.get("verification_results"):
         with st.expander("Verification", expanded=True):
-            st.dataframe([
-                {"check": v.get("name"), "status": v.get("status"), "exit": v.get("exit_code"), "summary": v.get("summary", "")}
+            rows = [
+                {"check": v.get("name"), "status": v.get("status"), "exit": v.get("exit_code"), "summary": v.get("summary", ""), "command": " ".join(str(c) for c in (v.get("command") or []))}
                 for v in result["verification_results"]
-            ], use_container_width=True, hide_index=True)
+            ]
+            statuses = sorted({r["status"] for r in rows})
+            picked = st.multiselect("Filter checks", statuses, default=statuses, key="verify_filter")
+            st.dataframe([r for r in rows if r["status"] in picked], use_container_width=True, hide_index=True)
 
     return response_text, findings, tool_logs
 
@@ -434,7 +464,7 @@ def _run_task_workflow(prompt: str) -> tuple[str, list[dict], list[dict]]:
 # ---------------------------------------------------------------------------
 
 def _render_findings(findings: list[dict]) -> None:
-    """Render expandable finding cards with severity badges."""
+    """Render expandable finding cards with severity + verification badges."""
     if not findings:
         return
 
@@ -445,16 +475,27 @@ def _render_findings(findings: list[dict]) -> None:
         "low": "🟢",
         "info": "🔵",
     }
+    status_emoji = {"verified": "✅", "hypothesis": "💭", "fixed": "🔧", "blocked": "⛔"}
 
     st.markdown("---")
-    st.markdown(f"### 📋 Findings ({len(findings)})")
+    filt = st.selectbox(
+        "Finding status",
+        ["all", "verified", "hypothesis", "fixed", "blocked"],
+        key="finding_status_filter",
+    )
+    shown = [f for f in findings if filt == "all" or f.get("verification_status", "hypothesis") == filt]
+    st.markdown(f"### 📋 Findings ({len(shown)}/{len(findings)})")
 
-    for i, f in enumerate(findings[:20]):
+    for i, f in enumerate(shown[:20]):
         sev = f.get("severity", "info")
         emoji = severity_colors.get(sev, "⚪")
         agent = f.get("agent", "unknown")
+        vstat = f.get("verification_status", "hypothesis")
+        badge = f"{status_emoji.get(vstat, '❓')} {vstat}"
 
-        with st.expander(f"{emoji} [{sev.upper()}] {f.get('title', 'Finding')} — {agent}"):
+        with st.expander(f"{emoji} [{sev.upper()}] {f.get('title', 'Finding')} — {agent} · {badge}"):
+            if f.get("evidence_ids"):
+                st.caption(f"🔗 Evidence: {', '.join(f['evidence_ids'])}")
             col1, col2 = st.columns([2, 1])
             with col1:
                 if f.get("description"):

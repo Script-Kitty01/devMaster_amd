@@ -24,7 +24,6 @@ Thumbs.db
 # Streamlit
 .streamlit/
 
-# Test artifacts
-test_*.py
-!tests/
-!tests/test_*.py
+# Test scratch at repo root (keep the real suite tracked)
+/test_*.py
+*.log

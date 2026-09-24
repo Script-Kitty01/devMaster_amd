@@ -11,6 +11,7 @@ dependencies = [
     "sentence-transformers>=3.0.0",
     "streamlit>=1.35.0",
     "gradio>=4.0.0",
+    "textual>=0.86.0",
     "gitpython>=3.1.0",
     "pygments>=2.18.0",
     "bandit>=1.7.0",
@@ -18,6 +19,9 @@ dependencies = [
     "pydantic>=2.0.0",
     "rich>=13.0.0",
     "huggingface-hub>=0.20.0",
+    "psutil>=5.9.0",
+    "pyperclip>=1.8.0",
+    "pypdf>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -31,3 +35,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
