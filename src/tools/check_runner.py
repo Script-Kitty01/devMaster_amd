@@ -60,7 +60,9 @@ class PytestAdapter(CheckAdapter):
     name = "pytest"
 
     def build_command(self, discovery: dict[str, Any]) -> list[str]:
-        return ["pytest", "-q"]
+        # `python -m pytest` (not bare `pytest`) so rootdir imports like
+        # `from app import ...` resolve on pytest 8 / Python 3.13.
+        return ["python", "-m", "pytest", "-q", "tests"]
 
 
 class NpmScriptAdapter(CheckAdapter):
@@ -281,7 +283,7 @@ class CheckRunner:
     def _default_checks(self) -> list[dict[str, Any]]:
         defaults: list[dict[str, Any]] = []
         if (Path(self.worktree_path) / "tests").is_dir():
-            defaults.append({"name": "pytest", "command": ["pytest", "-q"], "marker": "default"})
+            defaults.append({"name": "pytest", "command": ["python", "-m", "pytest", "-q", "tests"], "marker": "default"})
         defaults.append({"name": "compileall", "command": ["python", "-m", "compileall", "-q", "."], "marker": "default"})
         return defaults
 

@@ -43,6 +43,7 @@ class TaskState(TypedDict, total=False):
     repo_path: str                 # absolute path to the target repository
     task_text: str                 # raw user request
     task_brief: Optional[TaskBrief]
+    task_constraints: list[str]    # explicit UI/CLI constraints (readonly, no-install...)
 
     # --- Phase tracking (UI timeline) ---
     phase: str                     # intake|recon|team|investigate|plan|approval|implement|verify|review|report|blocked
@@ -97,11 +98,14 @@ def initial_task_state(
     repo_path: str,
     task_text: str,
     max_retries: int = 2,
+    task_constraints: Optional[list[str]] = None,
 ) -> TaskState:
     """Build a fresh TaskState for a new task run."""
     return TaskState(
         repo_path=repo_path,
         task_text=task_text,
+        task_constraints=list(task_constraints or []),
+        task_brief=None,
         phase="intake",
         phase_detail="Task accepted; validating request.",
         approval_required=False,

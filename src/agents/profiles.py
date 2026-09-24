@@ -85,6 +85,14 @@ CHECK_TOOLS: tuple[str, ...] = (
     "git_diff",
     "git_status",
 )
+RUNTIME_TOOLS: tuple[str, ...] = (
+    "discover_services",
+    "service_start",
+    "service_health",
+    "service_logs",
+    "service_stop",
+    "profile_command",
+)
 PATCH_TOOLS: tuple[str, ...] = ("git_diff", "read_file", "search_code")
 
 
@@ -162,7 +170,7 @@ VERIFICATION_AGENT = _profile(
     role="verification",
     title="Verification Agent",
     description="Discovers and runs tests, lint, build, and scanners in the worktree.",
-    tools=CHECK_TOOLS,
+    tools=CHECK_TOOLS + RUNTIME_TOOLS,
     artifacts=("VerificationResult",),
     limits=AgentLimits(max_tool_calls=8, time_limit_seconds=180),
 )

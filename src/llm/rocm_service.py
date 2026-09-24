@@ -536,7 +536,10 @@ class ROCmLLM:
             try:
                 from sentence_transformers import SentenceTransformer
 
-                device = "cuda" if self._backend == "rocm" else "cpu"
+                import torch as _torch
+
+                cuda_ok = bool(getattr(_torch.cuda, "is_available", lambda: False)())
+                device = "cuda" if cuda_ok else "cpu"
                 self._embedder = SentenceTransformer(
                     self.config.embedding_model,
                     device=device,
@@ -546,7 +549,7 @@ class ROCmLLM:
                 logger.info(
                     "Embedding model '%s' loaded on %s.",
                     self.config.embedding_model,
-                    "GPU (ROCm)" if device == "cuda" else "CPU",
+                    "GPU (CUDA)" if device == "cuda" else "CPU",
                 )
             except Exception as exc:
                 logger.error("Failed to load embedding model: %s", exc)
@@ -667,9 +670,11 @@ class ROCmLLM:
     def diagnostics(self) -> dict[str, Any]:
         """Runtime diagnostics for truthful status reporting (plan.md Phase 3)."""
         runtime = self._runtime_info or {}
+        gpu_label = self._gpu_label()
         return {
             "configured_backend": self.config.backend,
             "active_backend": self._backend,
+            "gpu_label": gpu_label,
             "backend_verified": self._backend_is_verified(),
             "model": self.config.model_path,
             "n_gpu_layers": self.config.n_gpu_layers,
@@ -677,7 +682,7 @@ class ROCmLLM:
             "runtime": runtime.get("runtime", "not-checked"),
             "runtime_evidence": runtime.get("evidence", ""),
             "gpu_backend_library": runtime.get("library", ""),
-            "detected_gpu": runtime.get("gpu_name", ""),
+            "detected_gpu": runtime.get("gpu_name", "") or gpu_label,
             "hip_version": runtime.get("hip_version", ""),
             "ready": self.is_ready,
             "fallback_reason": self._fallback_reason,
@@ -688,6 +693,30 @@ class ROCmLLM:
             "ollama_url": self.config.ollama_url if self.config.backend == "ollama" else "",
         }
 
+    def _gpu_label(self) -> str:
+        """Human GPU name favoring Ollama (authoritative) over torch."""
+        if self.config.backend == "ollama" and self._initialized and self._llm is not None:
+            try:
+                import urllib.request
+
+                payload = json.dumps({"model": self.config.model_path}).encode("utf-8")
+                req = urllib.request.Request(
+                    f"{self.config.ollama_url.rstrip('/')}/api/show",
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    details = json.loads(resp.read().decode("utf-8")).get("details", {})
+                fam = str(details.get("family", "")) or "gpu"
+                return f"Ollama/CUDA ({fam})"
+            except Exception:  # noqa: BLE001
+                return "Ollama GPU (details unavailable)"
+        runtime = self._runtime_info or {}
+        if runtime.get("gpu_name"):
+            return str(runtime["gpu_name"])
+        return ""
+
     def status_line(self) -> str:
         """One-line, truthful status shared by both UIs (plan.md Phase 5 item 3)."""
         diag = self.diagnostics()
@@ -695,12 +724,13 @@ class ROCmLLM:
         parts = [
             f"backend={diag['active_backend']}{verified}",
             f"model={Path(str(diag['model'])).name}",
-            f"gpu_layers={diag['gpu_offload_layers']}",
         ]
-        if diag["runtime"] not in ("", "not-checked"):
-            parts.append(f"runtime={diag['runtime']}")
-        if diag["detected_gpu"]:
-            parts.append(f"gpu={diag['detected_gpu']}")
+        if diag["active_backend"] == "ollama":
+            parts.append(f"gpu={diag.get('detected_gpu') or 'unknown (ollama)'}")
+        else:
+            parts.append(f"gpu_layers={diag['gpu_offload_layers']}")
+            if diag.get("runtime") not in ("", "not-checked"):
+                parts.append(f"runtime={diag['runtime']}")
         if diag["hip_version"]:
             parts.append(f"hip={diag['hip_version']}")
         if diag["embedding_device"] not in ("", "not-loaded"):

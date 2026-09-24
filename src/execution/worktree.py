@@ -88,12 +88,15 @@ class WorktreeManager:
             repo.git.worktree("add", "--detach", str(worktree_path), base or "HEAD")
 
             # Give this checkout a unique local branch name for provenance.
+            # Re-runs reuse the branch name (e.g. eval scripts): check it out
+            # when it already exists instead of failing creation.
             try:
                 repo.git.checkout("-b", branch)
-            except Exception as exc:
-                logger.debug("Branch creation note: %s", exc)
-                # worktree add --detach put us on a detached HEAD; create the branch
-                repo.git.checkout("-b", branch)
+            except Exception:
+                try:
+                    repo.git.checkout(branch)
+                except Exception as exc:
+                    logger.debug("Branch checkout note: %s", exc)
 
             result = WorktreeResult(
                 ok=True,

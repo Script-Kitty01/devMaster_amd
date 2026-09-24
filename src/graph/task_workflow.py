@@ -140,6 +140,9 @@ class TaskWorkflow:
         # Initialize tools
         self.tool_registry = tool_registry or ToolRegistry(repo_path=".")
         register_intelligence_tools(self.tool_registry, rag_store=rag_store)
+        from src.tools.runtime_tools import ServiceManager, register_runtime_tools
+
+        self.service_manager = register_runtime_tools(self.tool_registry)
 
         self.worktree_manager = worktree_manager
 
@@ -286,6 +289,12 @@ class TaskWorkflow:
         if repo_path and tool_registry is not None and hasattr(tool_registry, "repo_path"):
             tool_registry.repo_path = repo_path
 
+        # Explicit UI/CLI constraints win; free-text hints are merged in.
+        from src.tools.runtime_tools import merge_constraints, parse_constraints
+
+        requested = [c for c in (state.get("task_constraints") or []) if isinstance(c, str)]
+        constraints = merge_constraints(["isolated worktree execution"], requested, parse_constraints(task_text))
+
         # Infer intent (review, diagnose, change)
         lower_task = task_text.lower()
         if any(w in lower_task for w in ["fix", "patch", "repair", "implement", "change", "refactor", "update", "modify", "add"]):
@@ -302,13 +311,14 @@ class TaskWorkflow:
             user_request=task_text,
             intent=intent,
             scope_paths=[],
-            constraints=["read-only until approval", "isolated worktree execution"],
+            constraints=constraints,
             selected_profiles=state.get("selected_profiles", []),
             approval_required=approval_required,
         )
 
         return {
             "task_brief": brief,
+            "task_constraints": constraints,
             "phase": "recon",
             "phase_detail": f"Task accepted (intent: {intent}); discovering repository.",
             "approval_required": approval_required,
