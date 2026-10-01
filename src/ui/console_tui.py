@@ -38,26 +38,26 @@ from textual.widgets import (Button, DataTable, Footer, Header, Input,
 logger = logging.getLogger("kutaar.console")
 
 BANNER = (
-    "[bold red]██╗  ██╗[/][bold orange1]██╗   ██╗[/][bold orange1]████████╗[/]"
-    "[bold yellow] █████╗  [/][bold yellow] █████╗ [/][bold green]██████╗ [/]\n"
-    "[bold red]██║ ██╔╝[/][bold orange1]██║   ██║[/][bold orange1]╚══██╔══╝[/]"
-    "[bold yellow]██╔══██╗[/][bold yellow]██╔══██╗[/][bold green]██╔══██╗[/]\n"
-    "[bold red]█████╔╝ [/][bold orange1]██║   ██║[/][bold orange1]   ██║   [/]"
-    "[bold yellow]███████║[/][bold yellow]███████║[/][bold green]██████╔╝[/]\n"
-    "[bold red]██╔═██╗ [/][bold orange1]██║   ██║[/][bold orange1]   ██║   [/]"
-    "[bold yellow]██╔══██║[/][bold yellow]██╔══██║[/][bold green]██╔══██╗[/]\n"
-    "[bold red]██║  ██╗[/][bold orange1]╚██████╔╝[/][bold orange1]   ██║   [/]"
-    "[bold yellow]██║  ██║[/][bold yellow]██║  ██║[/][bold green]██║  ██║[/]\n"
-    "[bold red]╚═╝  ╚═╝[/][bold orange1] ╚═════╝ [/][bold orange1]   ╚═╝   [/]"
-    "[bold yellow]╚═╝  ╚═╝[/][bold yellow]╚═╝  ╚═╝[/][bold green]╚═╝  ╚═╝[/]"
+    "[bold #ff1493]██╗  ██╗[/][bold #ff69b4]██╗   ██╗[/][bold #ff85c1]████████╗[/]"
+    "[bold #ffb6c1] █████╗  [/][bold #ffc0cb] █████╗ [/][bold white]██████╗ [/]\n"
+    "[bold #ff1493]██║ ██╔╝[/][bold #ff69b4]██║   ██║[/][bold #ff85c1]╚══██╔══╝[/]"
+    "[bold #ffb6c1]██╔══██╗[/][bold #ffc0cb]██╔══██╗[/][bold white]██╔══██╗[/]\n"
+    "[bold #ff1493]█████╔╝ [/][bold #ff69b4]██║   ██║[/][bold #ff85c1]   ██║   [/]"
+    "[bold #ffb6c1]███████║[/][bold #ffc0cb]███████║[/][bold white]██████╔╝[/]\n"
+    "[bold #ff1493]██╔═██╗ [/][bold #ff69b4]██║   ██║[/][bold #ff85c1]   ██║   [/]"
+    "[bold #ffb6c1]██╔══██║[/][bold #ffc0cb]██╔══██║[/][bold white]██╔══██╗[/]\n"
+    "[bold #ff1493]██║  ██╗[/][bold #ff69b4]╚██████╔╝[/][bold #ff85c1]   ██║   [/]"
+    "[bold #ffb6c1]██║  ██║[/][bold #ffc0cb]██║  ██║[/][bold white]██║  ██║[/]\n"
+    "[bold #ff1493]╚═╝  ╚═╝[/][bold #ff69b4] ╚═════╝ [/][bold #ff85c1]   ╚═╝   [/]"
+    "[bold #ffb6c1]╚═╝  ╚═╝[/][bold #ffc0cb]╚═╝  ╚═╝[/][bold white]╚═╝  ╚═╝[/]"
 )
 
-SUBTITLE = ("[bold]Kutaar - Universal Engineering Agent[/]\n"
-            "[dim]AMD Hackathon  -  Local Inference  -  Privacy-First[/]")
+SUBTITLE = ("[bold white]Kutaar - Universal Engineering Agent[/]\n"
+            "[#ffb6c1]AMD Hackathon  -  Local Inference  -  Privacy-First[/]")
 
-QUICK = ('[cyan]-- QUICK START --[/]\nTry: "[red]Scan this repo for '
-         'security issues[/]"\n[red]Ctrl+P[/] command palette   '
-         '[red]Ctrl+,[/] settings   [red]F1[/] help')
+QUICK = ('[bold #ff69b4]-- QUICK START --[/]\nTry: "[white]Scan this repo for '
+         'security issues[/]"\n[bold #ff1493]Ctrl+P[/] [white]palette[/]   '
+         '[bold #ff1493]Ctrl+,[/] [white]settings[/]   [bold #ff1493]F1[/] [white]help[/]')
 
 PHASES = ["intake", "recon", "team", "investigate", "plan", "approval",
           "implement", "verify", "review", "report"]
@@ -165,20 +165,58 @@ class KutaarConsole(App):
 
     TITLE = "KUTAAR // UNIVERSAL ENGINEERING AGENT - AMD Hackathon"
     CSS = """
-    #top{height:1;}
+    Screen {
+        background: #1a0b14;
+        color: #ffffff;
+    }
+    #top{
+        height:1;
+        background: #ff1493;
+        color: #ffffff;
+        text-style: bold;
+    }
     #body{height:1fr;}
-    #tools{width:24;border-right:solid $primary;}
-    #center{width:1fr;}
-    #right{width:34;border-left:solid $primary;}
+    #tools{
+        width:24;
+        border-right:solid #ff69b4;
+        background: #240e1c;
+    }
+    #center{width:1fr; background: #1a0b14;}
+    #right{
+        width:34;
+        border-left:solid #ff69b4;
+        background: #240e1c;
+    }
     #banner{height:9;padding:0 1;}
     #sub{height:4;padding:0 1;}
-    #quick{height:5;padding:0 1;}
+    #quick{height:5;padding:0 1; background: #331427; border: solid #ff69b4;}
     #presets{height:3;padding:0 1;}
-    #stream{height:1fr;border-top:solid $primary;border-bottom:solid $primary;}
+    #presets Button {
+        background: #ff1493;
+        color: #ffffff;
+        border: none;
+    }
+    #stream{
+        height:1fr;
+        border-top:solid #ff69b4;
+        border-bottom:solid #ff69b4;
+        background: #1a0b14;
+        color: #ffffff;
+    }
     #askrow{height:3;padding:0 1;}
-    #ask{width:3fr;}
-    #backend{width:1fr;}
-    #hints{height:1;}
+    #ask{
+        width:3fr;
+        border: solid #ff69b4;
+        background: #2d1223;
+        color: #ffffff;
+    }
+    #backend{
+        width:1fr;
+        border: solid #ff69b4;
+        background: #2d1223;
+        color: #ffffff;
+    }
+    #hints{height:1; color: #ffb6c1;}
     .panel{padding:0 1;}
     """
 
@@ -203,7 +241,7 @@ class KutaarConsole(App):
                      "Local - Private - AMD ROCm", id="top")
         with Horizontal(id="body"):
             with Vertical(id="tools"):
-                yield Static("[bold red]TOOLS[/]", classes="panel")
+                yield Static("[bold #ff1493]TOOLS[/]", classes="panel")
                 yield ListView(id="toollist")
             with Vertical(id="center"):
                 yield Static(BANNER, id="banner")
@@ -220,10 +258,13 @@ class KutaarConsole(App):
                                 id="ask")
                     yield Select([("TASK", "task"), ("CLASSIC", "classic")],
                                  value="task", id="backend")
-                yield Static("[red]^p[/] Commands  [red]^,[/] Settings  "
-                             "[red]^l[/] Clear  [red]^h[/] History  "
-                             "[red]f1[/] Help  [red]<-[/] Send  "
-                             "[red]f2[/] Mode", id="hints")
+                yield Static("[bold #ff1493]^p[/] [white]Commands[/]  "
+                             "[bold #ff1493]^,[/] [white]Settings[/]  "
+                             "[bold #ff1493]^l[/] [white]Clear[/]  "
+                             "[bold #ff1493]^h[/] [white]History[/]  "
+                             "[bold #ff1493]f1[/] [white]Help[/]  "
+                             "[bold #ff1493]<-[/] [white]Send[/]  "
+                             "[bold #ff1493]f2[/] [white]Mode[/]", id="hints")
             with Vertical(id="right"):
                 yield Static("MODEL ROUTING\nNo active model", id="model")
                 yield Static("TASK PHASES\n--", id="phases")
@@ -236,7 +277,7 @@ class KutaarConsole(App):
 
     # -- mount -------------------------------------------------------
     def on_mount(self) -> None:
-        items = [ListItem(Label(f"[red]>[/] {name}\n[dim]{blurb}[/]"))
+        items = [ListItem(Label(f"[bold #ff1493]>[/] [bold white]{name}[/]\n[#ffb6c1]{blurb}[/]"))
                  for name, blurb in TOOL_BLURBS]
         self.query_one("#toollist", ListView).extend(items)
         tbl = self.query_one("#findings", DataTable)
@@ -249,7 +290,7 @@ class KutaarConsole(App):
 
     # -- helpers -----------------------------------------------------
     def _say(self, who: str, text: str) -> None:
-        tag = "[bold cyan]you[/]" if who == "user" else "[bold magenta]kutaar[/]"
+        tag = "[bold white]you[/]" if who == "user" else "[bold #ff69b4]kutaar[/]"
         self.query_one("#stream", RichLog).write(f"{tag}: {text}\n")
 
     def _agent(self, line: str) -> None:

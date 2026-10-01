@@ -1,7 +1,7 @@
 """Kutaar Terminal Menu - Rich-only CLI wizard mirroring Streamlit sidebar.
 
 Streamlit sidebar -> Terminal menu: Repo+Index->1, Mode/Intent->2,
-Team profiles->3, Toggles->4, Model info->5, About->6, Chat->7 Ask.
+Team profiles->3, Toggles->4, Model info->5, About->6, Chat->7 Ask.l̥
 
 Usage: python -m src.ui.menu_cli [--repo PATH] [--mode task|classic]
        python -m src.ui.menu_cli --once "Review this repo" [--auto-approve]
@@ -35,8 +35,8 @@ console = Console()
 
 PHASES = ["intake", "recon", "team", "investigate", "plan", "approval",
           "implement", "verify", "review", "report"]
-SEV_EMOJI = {"critical": "🔴", "high": "🟠", "medium": "🟡",
-             "low": "🟢", "info": "🔵"}
+SEV_EMOJI = {"critical": "🌸", "high": "🌺", "medium": "🌷",
+             "low": "💮", "info": "🤍"}
 AGENT_BLURBS = [
     ("Planner/Task Manager", "orchestrates analysis, scopes intent"),
     ("Investigator", "explores repo, collects evidence"),
@@ -117,24 +117,24 @@ def has_pypdf() -> bool:
 
 def banner() -> None:
     console.print(Panel.fit(
-        "[bold magenta]Kutaar[/] - Multi-Agent Engineering Assistant\n"
-        "[dim]AMD ROCm + LangGraph - 100% local - terminal menu[/]",
-        title="kutaar", border_style="magenta"))
+        "[bold hot_pink]Kutaar[/] [bold white]- Multi-Agent Engineering Assistant[/]\n"
+        "[white on #d63384] AMD ROCm + LangGraph [/] [italic #ffb6c1]100% local - terminal menu[/]",
+        title="[bold #ff69b4]kutaar[/]", border_style="#ff69b4"))
 
 
 def pause() -> None:
-    Prompt.ask("[dim]Press Enter to continue[/]", default="")
+    Prompt.ask("[italic #ffc0cb]Press Enter to continue[/]", default="")
 
 
 def choose(title: str, options: list[str], default: int = 1) -> int:
-    console.print(f"\n[bold]{title}[/]")
+    console.print(f"\n[bold bright_white]{title}[/]")
     for i, opt in enumerate(options, 1):
-        console.print(f"  [cyan]{i}[/]. {opt}")
+        console.print(f"  [bold #ff69b4]{i}[/][white]. {opt}[/]")
     while True:
-        raw = Prompt.ask("Select", default=str(default)).strip()
+        raw = Prompt.ask("[bold #ff1493]Select[/]", default=str(default)).strip()
         if raw.isdigit() and 1 <= int(raw) <= len(options):
             return int(raw)
-        console.print("[red]Enter a number from the list.[/]")
+        console.print("[bold #ff80df]Enter a number from the list.[/]")
 
 def ensure_backend(state: MenuState) -> None:
     from src.llm.rocm_service import ROCmLLM
@@ -175,7 +175,7 @@ def pdf_chunks(repo: Path) -> list:
 def do_index(state: MenuState, repo: str = "") -> bool:
     repo = repo or state.repo_path
     if not repo or not Path(repo).exists():
-        console.print(f"[red]Path not found: {repo}[/]")
+        console.print(f"[bold #ff4d94]Path not found: {repo}[/]")
         return False
     ensure_backend(state)
     assert state.llm is not None and state.rag_store is not None
@@ -185,19 +185,19 @@ def do_index(state: MenuState, repo: str = "") -> bool:
         state.task_workflow = None
         state.thread_id = f"kutaar-{int(time.time())}"
     from src.ingestion.repo_indexer import RepoIndexer
-    with Progress(SpinnerColumn(),
-                  TextColumn("[progress.description]{task.description}"),
+    with Progress(SpinnerColumn(style="#ff69b4"),
+                  TextColumn("[bold #ffb6c1]{task.description}[/]"),
                   console=console, transient=True) as prog:
         prog.add_task("Indexing repository...", total=None)
         indexer = RepoIndexer(repo)
         chunks = list(indexer.chunk_all())
         if state.include_pdfs:
             if not has_pypdf():
-                console.print("[yellow]pypdf missing - skip PDFs.[/]")
+                console.print("[#ffc0cb]pypdf missing - skip PDFs.[/]")
             else:
                 chunks += pdf_chunks(Path(repo))
         if not chunks:
-            console.print("[yellow]No code files found.[/]")
+            console.print("[#ffb6c1]No code files found.[/]")
             return False
         model = getattr(state.llm.config, "embedding_model", "")
         state.rag_store.reset(embedding_model=model)
@@ -210,7 +210,7 @@ def do_index(state: MenuState, repo: str = "") -> bool:
     state.indexed_chunks = count
     state.indexed_files = stats["file_count"]
     ensure_backend(state)
-    console.print(f"[green]Indexed {count} chunks from "
+    console.print(f"[bold #ff69b4]Indexed {count} chunks from "
                   f"{stats['file_count']} files.[/]")
     return True
 
@@ -218,11 +218,11 @@ def do_index(state: MenuState, repo: str = "") -> bool:
 
 def menu_repo(state: MenuState) -> None:
     console.print(Panel(
-        f"Current: [cyan]{state.repo_path}[/]\n"
-        f"Indexed: [green]{state.indexed_repo_path or 'no'}[/] "
-        f"({state.indexed_chunks} chunks / {state.indexed_files} files)",
-        title="1 - Repository"))
-    path = Prompt.ask("Repo path (empty = keep)", default="").strip()
+        f"Current: [bold #ff69b4]{state.repo_path}[/]\n"
+        f"Indexed: [bold white]{state.indexed_repo_path or 'no'}[/] "
+        f"([#ffb6c1]{state.indexed_chunks} chunks / {state.indexed_files} files[/])",
+        title="[bold white]1 - Repository[/]", border_style="#ff69b4"))
+    path = Prompt.ask("[#ffb6c1]Repo path (empty = keep)[/]", default="").strip()
     if path:
         state.repo_path = path
     state.include_pdfs = Confirm.ask(
@@ -234,10 +234,10 @@ def menu_repo(state: MenuState) -> None:
 
 
 def menu_mode(state: MenuState) -> None:
-    console.print(Panel(f"Mode: [cyan]{state.app_mode}[/] | "
-                        f"Intent: [cyan]{state.task_intent}[/] | "
-                        f"Auto-approve: {state.auto_approve}",
-                        title="2 - Workspace mode"))
+    console.print(Panel(f"Mode: [bold #ff69b4]{state.app_mode}[/] | "
+                        f"Intent: [bold white]{state.task_intent}[/] | "
+                        f"Auto-approve: [bold #ffb6c1]{state.auto_approve}[/]",
+                        title="[bold white]2 - Workspace mode[/]", border_style="#ff69b4"))
     m = choose("Workflow mode (sidebar radio)",
                ["Task Mode (Autonomous)", "Classic Review"],
                default=1 if state.app_mode == "task" else 2)
@@ -249,12 +249,12 @@ def menu_mode(state: MenuState) -> None:
                             "Change": 3}.get(state.task_intent, 1))
         state.task_intent = ["Review", "Diagnose", "Change"][i - 1]
         if state.task_intent == "Change":
-            console.print("[yellow]Change pauses before worktree "
+            console.print("[bold #ff80df]Change pauses before worktree "
                           "mutation for approval.[/]")
             state.auto_approve = Confirm.ask(
                 "Auto-approve worktree patch?",
                 default=state.auto_approve)
-    console.print(f"[green]Mode: {state.app_mode}/{state.task_intent}[/]")
+    console.print(f"[bold white]Mode:[/] [bold #ff69b4]{state.app_mode}/{state.task_intent}[/]")
     pause()
 
 
@@ -262,31 +262,31 @@ def menu_team(state: MenuState) -> None:
     from src.agents.agent_registry import available_profiles
     profiles = available_profiles()
     names = sorted(profiles)
-    console.print(Panel("Numbers toggle profiles (sidebar multiselect). "
-                        "Empty line = done.", title="3 - Team"))
+    console.print(Panel("Numbers toggle profiles. Empty line = done.",
+                        title="[bold white]3 - Team[/]", border_style="#ff69b4"))
     sel = set(state.selected_profiles)
     while True:
         for i, name in enumerate(names, 1):
-            mark = "[green]x[/]" if name in sel else "[dim] [/]"
-            console.print(f"  {mark} [cyan]{i}[/]. "
-                          f"{profiles[name].title} ([dim]{name}[/])")
-        raw = Prompt.ask("Toggle number (empty=done)",
+            mark = "[bold #ff1493]x[/]" if name in sel else "[dim] [/]"
+            console.print(f"  {mark} [bold #ff69b4]{i}[/]. "
+                          f"[bold white]{profiles[name].title}[/] ([italic #ffc0cb]{name}[/])")
+        raw = Prompt.ask("[#ffb6c1]Toggle number (empty=done)[/]",
                          default="").strip().lower()
         if raw in ("", "done", "q"):
             break
         if raw.isdigit() and 1 <= int(raw) <= len(names):
             sel.symmetric_difference_update({names[int(raw) - 1]})
         else:
-            console.print("[red]Enter a number or empty to finish.[/]")
+            console.print("[bold #ff4d94]Enter a number or empty to finish.[/]")
     state.selected_profiles = sorted(sel)
-    console.print(f"[green]Team: {', '.join(state.selected_profiles)}[/]")
+    console.print(f"[bold #ff69b4]Team: {', '.join(state.selected_profiles)}[/]")
     pause()
 
 def menu_settings(state: MenuState) -> None:
     console.print(Panel(f"show_tools={state.show_tools} | "
                         f"show_diff={state.show_diff} | "
                         f"constraints={', '.join(state.constraints) or 'none'}",
-                        title="4 - Options (sidebar toggles)"))
+                        title="[bold white]4 - Options[/]", border_style="#ff69b4"))
     state.show_tools = Confirm.ask("Show tool logs?",
                                    default=state.show_tools)
     state.show_diff = Confirm.ask("Show patch diff?",
@@ -297,7 +297,7 @@ def menu_settings(state: MenuState) -> None:
             state.constraints.append(key)
         if not want and key in state.constraints:
             state.constraints.remove(key)
-    console.print("[green]Saved.[/]")
+    console.print("[bold #ff69b4]Saved.[/]")
     pause()
 
 
@@ -307,29 +307,29 @@ def menu_model(state: MenuState) -> None:
     diag = state.llm.diagnostics()
     ok = "verified" if diag.get("backend_verified") else "UNVERIFIED"
     console.print(Panel(
-        f"LLM backend: [cyan]{state.llm.backend.upper()}[/] ({ok})\n"
+        f"LLM backend: [bold #ff69b4]{state.llm.backend.upper()}[/] ([white]{ok}[/])\n"
         f"{state.llm.status_line()}\n"
-        f"Model file: {Path(str(diag.get('model'))).name}\n"
-        f"System: {system_line()}",
-        title="5 - Model"))
+        f"Model file: [bold white]{Path(str(diag.get('model'))).name}[/]\n"
+        f"System: [#ffb6c1]{system_line()}[/]",
+        title="[bold white]5 - Model[/]", border_style="#ff69b4"))
     if Confirm.ask("Re-initialize LLM?", default=False):
         state.llm.initialize()
-        console.print("[green]Re-initialized.[/]")
+        console.print("[bold #ff69b4]Re-initialized.[/]")
     pause()
 
 
 def menu_about() -> None:
     table = Table(title="6 - Agents (sidebar About)",
-                  show_header=True, header_style="bold magenta")
-    table.add_column("Agent")
-    table.add_column("Role")
+                  show_header=True, header_style="bold #ff1493 on white", border_style="#ff69b4")
+    table.add_column("Agent", style="bold #ff69b4")
+    table.add_column("Role", style="white")
     for title, role in AGENT_BLURBS:
         table.add_row(title, role)
     console.print(table)
-    console.print(Panel("Private multi-agent review for code, perf, "
+    console.print(Panel("[bold white]Private multi-agent review for code, perf, "
                         "arch, DevOps. Built for AMD AI DevMaster "
-                        "Hackathon Track 2.",
-                        title="About"))
+                        "Hackathon Track 2.[/]",
+                        title="[bold #ff69b4]About[/]", border_style="#ff69b4"))
     pause()
 
 
@@ -342,28 +342,28 @@ def render_timeline(result: dict) -> None:
     bits = []
     for i, p in enumerate(PHASES):
         if i < idx:
-            bits.append(f"[green]OK {p}[/]")
+            bits.append(f"[bold #ff69b4]OK {p}[/]")
         elif i == idx:
-            bits.append(f"[bold reverse] {p} [/]")
+            bits.append(f"[bold white on #ff1493] {p} [/]")
         else:
-            bits.append(f"[dim]{p}[/]")
+            bits.append(f"[italic #ffc0cb]{p}[/]")
     console.print(Panel(" > ".join(bits) +
-                        (f"\n{result.get('phase_detail', '')}" if result.get("phase_detail") else "") +
-                        (f"\nWorktree: {result.get('worktree_path') or 'not created'} | "
-                         f"Branch: {result.get('worktree_branch') or 'none'}"),
-                        title="Task timeline"))
+                        (f"\n[white]{result.get('phase_detail', '')}[/]" if result.get("phase_detail") else "") +
+                        (f"\nWorktree: [bold #ffb6c1]{result.get('worktree_path') or 'not created'}[/] | "
+                         f"Branch: [bold #ffb6c1]{result.get('worktree_branch') or 'none'}[/]"),
+                        title="[bold white]Task timeline[/]", border_style="#ff69b4"))
 
 
 def render_findings(findings: list[dict]) -> None:
     if not findings:
         return
     table = Table(title=f"Findings ({len(findings)})",
-                  show_header=True, header_style="bold magenta")
-    table.add_column("Sev")
-    table.add_column("Title")
-    table.add_column("File")
-    table.add_column("Status")
-    table.add_column("Agent")
+                  show_header=True, header_style="bold white on #ff1493", border_style="#ff69b4")
+    table.add_column("Sev", style="#ff1493")
+    table.add_column("Title", style="bold white")
+    table.add_column("File", style="#ffb6c1")
+    table.add_column("Status", style="italic white")
+    table.add_column("Agent", style="#ff69b4")
     for f in findings[:20]:
         sev = str(f.get("severity", "info"))
         table.add_row(f"{SEV_EMOJI.get(sev, '-')} {sev}",
@@ -378,12 +378,12 @@ def render_findings(findings: list[dict]) -> None:
     if det > 1:
         f = findings[det - 2]
         console.print(Panel(
-            f"[bold]{f.get('title', '')}[/]\n"
-            f"Severity: {f.get('severity', '')} | Agent: {f.get('agent', '')}\n"
-            + (f"File: {f.get('file_path', '')}:{f.get('line_start', '')}\n" if f.get("file_path") else "")
-            + (f"\n{f.get('description', '')}\n" if f.get("description") else "")
-            + (f"\nFix: {f.get('recommendation', '')}" if f.get("recommendation") else ""),
-            title="Finding detail"))
+            f"[bold white]{f.get('title', '')}[/]\n"
+            f"Severity: [bold #ff1493]{f.get('severity', '')}[/] | Agent: [#ffb6c1]{f.get('agent', '')}[/]\n"
+            + (f"File: [italic #ffc0cb]{f.get('file_path', '')}:{f.get('line_start', '')}[/]\n" if f.get("file_path") else "")
+            + (f"\n[white]{f.get('description', '')}[/]\n" if f.get("description") else "")
+            + (f"\nFix: [bold #ff69b4]{f.get('recommendation', '')}[/]" if f.get("recommendation") else ""),
+            title="[bold white]Finding detail[/]", border_style="#ff69b4"))
         if f.get("code_snippet"):
             console.print(Syntax(str(f["code_snippet"])[:4000],
                                  str(f.get("language", "python") or "python"),
@@ -397,11 +397,12 @@ def render_findings(findings: list[dict]) -> None:
 def render_tools(logs: list[dict], show: bool) -> None:
     if not show or not logs:
         return
-    table = Table(title="Tool execution logs", show_header=True)
-    table.add_column("OK")
-    table.add_column("Tool")
-    table.add_column("ms")
-    table.add_column("Summary")
+    table = Table(title="Tool execution logs", show_header=True,
+                  header_style="bold white on #ff69b4", border_style="#ffb6c1")
+    table.add_column("OK", style="bold #ff1493")
+    table.add_column("Tool", style="bold white")
+    table.add_column("ms", style="#ffb6c1")
+    table.add_column("Summary", style="white")
     for t in logs:
         table.add_row("OK" if t.get("success") else "FAIL",
                       str(t.get("tool_name", "?"))[:20],
@@ -415,27 +416,28 @@ def render_results(state: MenuState, result: dict,
                    logs: list[dict]) -> None:
     render_timeline(result)
     console.print(Panel(Markdown(text or "No report."),
-                        title="Report"))
+                        title="[bold white]Report[/]", border_style="#ff69b4"))
     render_findings(findings)
     render_tools(logs, state.show_tools)
     if result.get("patch_proposal"):
         p = result["patch_proposal"]
         console.print(Panel(
             f"{p.get('summary', '')}\n"
-            f"Risk: {p.get('risk_level', '?')} | "
-            f"Files: {', '.join(p.get('files_changed', []))}\n"
-            f"Evidence: {', '.join(p.get('linked_evidence_ids', [])) or 'none'}\n"
+            f"Risk: [bold #ff1493]{p.get('risk_level', '?')}[/] | "
+            f"Files: [white]{', '.join(p.get('files_changed', []))}[/]\n"
+            f"Evidence: [#ffb6c1]{', '.join(p.get('linked_evidence_ids', [])) or 'none'}[/]\n"
             f"Verify: {' '.join(' '.join(str(c) for c in cmd) + '  ' for cmd in (p.get('verification_commands') or [])) or 'see Verification table'}",
-            title="Patch proposal"))
+            title="[bold white]Patch proposal[/]", border_style="#ff69b4"))
         if state.show_diff and p.get("unified_diff"):
             console.print(Syntax(str(p["unified_diff"])[:8000], "diff"))
     if result.get("verification_results"):
-        table = Table(title="Verification", show_header=True)
-        table.add_column("Check")
-        table.add_column("Status")
-        table.add_column("Exit")
-        table.add_column("Command")
-        table.add_column("Summary")
+        table = Table(title="Verification", show_header=True,
+                      header_style="bold white on #ff1493", border_style="#ff69b4")
+        table.add_column("Check", style="bold white")
+        table.add_column("Status", style="bold #ff69b4")
+        table.add_column("Exit", style="#ffb6c1")
+        table.add_column("Command", style="white")
+        table.add_column("Summary", style="italic #ffc0cb")
         for v in result["verification_results"]:
             table.add_row(str(v.get("name", ""))[:24],
                           str(v.get("status", "")),
@@ -444,7 +446,7 @@ def render_results(state: MenuState, result: dict,
                           str(v.get("summary", ""))[:80])
         console.print(table)
     if result.get("approval_required") and not result.get("approved"):
-        console.print("[yellow]Approval boundary: patch staged, "
+        console.print("[bold #ff1493]Approval boundary: patch staged, "
                       "not applied yet.[/]")
     while True:
         c = choose("Actions",
@@ -519,13 +521,13 @@ def run_classic(state: MenuState, prompt: str) -> tuple:
 
 def menu_ask(state: MenuState, preset: str = "") -> None:
     prompt = preset or Prompt.ask(
-        "Ask about your codebase (/copy needs pyperclip, "
-        "empty = back)").strip()
+        "[#ffb6c1]Ask about your codebase (/copy needs pyperclip, "
+        "empty = back)[/]").strip()
     if not prompt:
         return
     if not state.repo_indexed or \
             state.indexed_repo_path != state.repo_path:
-        console.print("[yellow]Index the repo first (menu 1).[/]")
+        console.print("[bold #ff80df]Index the repo first (menu 1).[/]")
         if Confirm.ask("Index now?", default=True):
             if not do_index(state):
                 return
@@ -538,7 +540,7 @@ def menu_ask(state: MenuState, preset: str = "") -> None:
             text, findings, logs, res = run_classic(state, prompt)
     except Exception as exc:  # noqa: BLE001
         logger.exception("workflow error")
-        console.print(f"[red]Error: {exc}[/]")
+        console.print(f"[bold #ff4d94]Error: {exc}[/]")
         return
     state.last_result = res
     state.history.append({"role": "user", "content": prompt})
@@ -552,8 +554,9 @@ def menu_ask(state: MenuState, preset: str = "") -> None:
             approved = dict(res)
             approved["approved"] = True
             approved["phase"] = "approval"
-            with Progress(SpinnerColumn(), TextColumn("{task.description}"),
-                           console=console, transient=True) as prog:
+            with Progress(SpinnerColumn(style="#ff69b4"),
+                          TextColumn("[bold #ffb6c1]{task.description}[/]"),
+                          console=console, transient=True) as prog:
                 prog.add_task("Applying approved patch...", total=None)
                 res2 = state.task_workflow.invoke(approved)
             text2 = res2.get("report", "")
@@ -568,12 +571,13 @@ def menu_ask(state: MenuState, preset: str = "") -> None:
 
 def menu_history(state: MenuState) -> None:
     if not state.history:
-        console.print("[dim]No conversation yet - use menu 7.[/]")
+        console.print("[italic #ffc0cb]No conversation yet - use menu 7.[/]")
         pause()
         return
     for m in state.history[-20:]:
-        who = "[cyan]you[/]" if m["role"] == "user" else "[magenta]kutaar[/]"
-        console.print(Panel(Markdown(str(m["content"])[:3000]), title=who))
+        who = "[bold white]you[/]" if m["role"] == "user" else "[bold #ff69b4]kutaar[/]"
+        border = "#ffffff" if m["role"] == "user" else "#ff69b4"
+        console.print(Panel(Markdown(str(m["content"])[:3000]), title=who, border_style=border))
         if m.get("findings"):
             render_findings(m["findings"])
     pause()
@@ -587,22 +591,22 @@ def menu_status(state: MenuState) -> None:
         except Exception:  # noqa: BLE001
             llm_line = "LLM status unavailable"
     console.print(Panel(
-        f"Repo: {state.repo_path}\n"
-        f"Indexed: {state.indexed_repo_path or 'no'} "
-        f"({state.indexed_chunks} chunks)\n"
-        f"Mode: {state.app_mode} / {state.task_intent}\n"
-        f"Team: {', '.join(state.selected_profiles)}\n"
-        f"{llm_line}\nSystem: {system_line()}",
-        title="Status (/status in TUI)"))
+        f"Repo: [bold #ff69b4]{state.repo_path}[/]\n"
+        f"Indexed: [bold white]{state.indexed_repo_path or 'no'}[/] "
+        f"([#ffb6c1]{state.indexed_chunks} chunks[/])\n"
+        f"Mode: [bold #ff69b4]{state.app_mode}[/] / [bold white]{state.task_intent}[/]\n"
+        f"Team: [italic #ffc0cb]{', '.join(state.selected_profiles)}[/]\n"
+        f"{llm_line}\nSystem: [#ffb6c1]{system_line()}[/]",
+        title="[bold white]Status[/]", border_style="#ff69b4"))
     pause()
 
 
 def main_menu(state: MenuState) -> int:
-    console.print("\n[bold]Main menu[/] [dim](mirrors Streamlit sidebar)[/]")
-    console.print(f"  Repo: [cyan]{Path(state.repo_path).name}[/] "
-                  f"{'[green]indexed[/]' if state.repo_indexed else '[yellow]not indexed[/]'} | "
-                  f"Mode: [cyan]{state.app_mode}/{state.task_intent}[/] | "
-                  f"Team: [dim]{len(state.selected_profiles)} profiles[/]")
+    console.print("\n[bold white]Main menu[/] [italic #ffc0cb](mirrors Streamlit sidebar)[/]")
+    console.print(f"  Repo: [bold #ff69b4]{Path(state.repo_path).name}[/] "
+                  f"{'[bold white on #ff1493] indexed [/]' if state.repo_indexed else '[italic #ffb6c1]not indexed[/]'} | "
+                  f"Mode: [bold #ff69b4]{state.app_mode}/{state.task_intent}[/] | "
+                  f"Team: [white]{len(state.selected_profiles)} profiles[/]")
     return choose("Go to",
                   ["1 - Repository (path + index + PDFs)",
                    "2 - Workspace mode (task/classic + intent)",
