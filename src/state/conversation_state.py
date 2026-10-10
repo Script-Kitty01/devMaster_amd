@@ -35,6 +35,11 @@ class AgentFinding(TypedDict, total=False):
     recommendation: str
     confidence: float  # 0.0 - 1.0
 
+    # --- Evidence-first contract (plan §5) ---
+    evidence_ids: list[str]            # ids of Evidence records backing this finding
+    verification_status: str           # "verified" | "hypothesis" | "fixed" | "blocked"
+    requires_fix: bool                 # whether addressing this finding needs a code change
+
 
 # ---------------------------------------------------------------------------
 # Tool Call Log

@@ -217,6 +217,11 @@ class RepoIndexer:
                     },
                 )
             )
+            # Once the final line is included, another overlapping chunk
+            # would be wholly redundant (e.g. a 50-line file with 50/10
+            # chunking previously produced a duplicate 41-50 chunk).
+            if end == len(lines):
+                break
 
         return chunks
 
